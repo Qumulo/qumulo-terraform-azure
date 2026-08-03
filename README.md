@@ -8,7 +8,7 @@ This repository contains Terraform which deploys a resource group, storage accou
 
 This greatly simplifies Terraform operations versus hand-building the underlying Azure resources: the provider creates the resource group (if needed), managed identities, and Key Vault (if needed), and manages the VM Scale Set / node lifecycle, scaling, and upgrades for you. To learn more about the provider read the [provider docs](https://qumulo.github.io/terraform-provider-qumulo-cloud/).
 
-> This repository was converted from Qumulo's [AWS CNQ Terraform](../qumulo-terraform-aws-main). Because the Azure provider resource handles multi-zone placement, floating IPs, and cluster DNS internally, there is no Azure equivalent of the AWS module's `nlb` and `route53-resolver` submodules -- those concerns are just attributes on `qumulo_filesystem_azure` (`availability_zones`, `floating_ips`, `cluster_fqdn`). The `secrets` module is preserved, backed by Azure Key Vault instead of AWS Secrets Manager.
+> This repository was converted from Qumulo's [AWS CNQ Terraform](../qumulo-terraform-aws-main). Because the Azure provider resource handles multi-zone placement, floating IPs, and cluster DNS internally, there is no Azure equivalent of the AWS module's `nlb` and `route53-resolver` submodules -- those concerns are just attributes on `qumulo_filesystem_azure` (`availability_zones`, `floating_ip_count`, `cluster_fqdn`). The `secrets` module is preserved, backed by Azure Key Vault instead of AWS Secrets Manager.
 
 ## Prerequisites
 
@@ -70,7 +70,7 @@ module "cloud_native_qumulo" {
 
   #------------OPTIONAL------------------
   cluster_version          = null
-  floating_ips             = ["10.0.1.101", "10.0.1.102", "10.0.1.103"]
+  floating_ip_count        = 3
   nexus_registration_key   = null
   provider_timeout_minutes = 30
   storage_class            = null
@@ -96,7 +96,7 @@ output "outputs_cloud_native_qumulo" {
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.11.0 |
 | <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) | >= 3.0 |
 | <a name="requirement_null"></a> [null](#requirement\_null) | >= 3.1 |
-| <a name="requirement_qumulo"></a> [qumulo](#requirement\_qumulo) | >= 1.0 |
+| <a name="requirement_qumulo"></a> [qumulo](#requirement\_qumulo) | >= 1.4.6 |
 
 ## Inputs
 
@@ -117,7 +117,7 @@ output "outputs_cloud_native_qumulo" {
 | <a name="input_deployment_name"></a> [deployment\_name](#input\_deployment\_name) | Lowercase seed for Azure resource names (2-15 characters: lowercase letters, digits, interior hyphens). | `string` | n/a | yes |
 | <a name="input_disable_appconfig_public_network_access"></a> [disable\_appconfig\_public\_network\_access](#input\_disable\_appconfig\_public\_network\_access) | OPTIONAL: Disable public network access to the App Configuration instance the provider creates. | `bool` | `false` | no |
 | <a name="input_disable_keyvault_public_network_access"></a> [disable\_keyvault\_public\_network\_access](#input\_disable\_keyvault\_public\_network\_access) | OPTIONAL: Disable public network access to the Key Vault the provider creates or uses. | `bool` | `false` | no |
-| <a name="input_floating_ips"></a> [floating\_ips](#input\_floating\_ips) | OPTIONAL: Floating IP addresses to assign to the cluster for client access. Each address must be free within the subnet's address range but outside the range Azure and the provider reserve for node NICs. | `list(string)` | `null` | no |
+| <a name="input_floating_ip_count"></a> [floating\_ip\_count](#input\_floating\_ip\_count) | OPTIONAL: Number of floating IPs to assign to the cluster. Must be 0 (disabled) or between 3 and 100. Requires networking\_mode "host\_managed". Once a count has been applied, omitting this attribute keeps the previous value -- set it to 0 explicitly to remove floating IPs. | `number` | `3` | no |
 | <a name="input_key_vault_id"></a> [key\_vault\_id](#input\_key\_vault\_id) | OPTIONAL: Full Azure resource ID of a customer-managed Key Vault. If omitted, the provider creates one. | `string` | `null` | no |
 | <a name="input_location"></a> [location](#input\_location) | Azure region for deployment | `string` | n/a | yes |
 | <a name="input_marketplace_image"></a> [marketplace\_image](#input\_marketplace\_image) | OPTIONAL: Azure Marketplace image specification for cluster nodes. | `list(object({ publisher = string, offer = string, sku = string, version = string }))` | `null` | no |

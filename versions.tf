@@ -30,7 +30,7 @@ terraform {
     }
     qumulo = {
       source  = "qumulo-terraform-registry.s3.us-east-1.amazonaws.com/qumulo/qumulo"
-      version = ">= 1.0"
+      version = ">= 1.4.6"
     }
   }
 }

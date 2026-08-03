@@ -37,7 +37,7 @@ module "cloud_native_qumulo" {
 
   #------------OPTIONAL------------------
   cluster_version          = null
-  floating_ips             = ["10.0.1.101", "10.0.1.102", "10.0.1.103"]
+  floating_ip_count        = 3
   nexus_registration_key   = null
   provider_timeout_minutes = 30
   storage_class            = null

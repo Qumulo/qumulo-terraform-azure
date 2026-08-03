@@ -77,7 +77,7 @@ resource "qumulo_filesystem_azure" "cluster" {
   deployment_name                         = var.deployment_name
   disable_appconfig_public_network_access = var.disable_appconfig_public_network_access
   disable_keyvault_public_network_access  = var.disable_keyvault_public_network_access
-  floating_ips                            = var.floating_ips
+  floating_ip_count                       = var.floating_ip_count
   key_vault_id                            = var.key_vault_id
   location                                = var.location
   marketplace_image                       = var.marketplace_image

@@ -158,11 +158,16 @@ variable "disable_keyvault_public_network_access" {
   default     = false
 }
 
-variable "floating_ips" {
-  description = "OPTIONAL: Floating IP addresses to assign to the cluster for client access. Each address must be free within the subnet's address range but outside the range Azure and the provider reserve for node NICs."
-  type        = list(string)
-  default     = null
-  nullable    = true
+variable "floating_ip_count" {
+  description = "OPTIONAL: Number of floating IPs to assign to the cluster. Must be 0 (disabled) or between 3 and 100. Requires networking_mode \"host_managed\". Once a count has been applied, omitting this attribute keeps the previous value -- set it to 0 explicitly to remove floating IPs."
+  type        = number
+  default     = 3
+  nullable    = false
+
+  validation {
+    condition     = var.floating_ip_count == 0 || (var.floating_ip_count >= 3 && var.floating_ip_count <= 100)
+    error_message = "floating_ip_count must be 0, or between 3 and 100."
+  }
 }
 
 variable "key_vault_id" {

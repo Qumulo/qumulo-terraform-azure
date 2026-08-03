@@ -52,7 +52,7 @@ tags = {
 # node_count                     - Number of nodes in the cluster. Valid values: 1 (single node), or 3-24. 2 is not supported, 4 requires a single availability zone.
 # deletion_protection            - Protects the cluster's VMs and storage accounts from deletion with CanNotDelete management locks. Default = true. Set to false to destroy.
 # cluster_version                - (OPTIONAL) Qumulo software version. Defaults to latest. Immutable after creation. Upgrade version via cluster UI/API.
-# floating_ips                   - (OPTIONAL) Floating IP addresses to assign to the cluster for client access. Must be free addresses within the subnet range.
+# floating_ip_count              - (OPTIONAL) Number of floating IPs to assign to the cluster. Must be 0, or between 3 and 100. Requires networking_mode "host_managed". Default=3.
 # nexus_registration_key         - (OPTIONAL, Deprecated) Qumulo Nexus registration key for remote support. Obtain from https://nexus.qumulo.com/user/registration-key
 # provider_timeout_minutes       - (OPTIONAL) The total time, in minutes, after which Terraform will abandon the provider deployment of the Qumulo cluster and timeout. Default is 30 minutes.
 # storage_class                  - (OPTIONAL) HOT cluster default is INTELLIGENT_TIERING, or override to STANDARD.
@@ -68,7 +68,7 @@ deletion_protection             = true
 
 #------------OPTIONAL------------------
 cluster_version          = null
-floating_ips             = null
+floating_ip_count        = 3
 nexus_registration_key   = null
 provider_timeout_minutes = 30
 storage_class            = null
