@@ -23,18 +23,25 @@
 variable "admin_pwd_or_keyvault_secret_id" {
   type        = string
   sensitive   = true
-  description = "Provide either a plaintext administrator password or the resource ID of an Azure Key Vault secret, in the form <key_vault_resource_id>/secrets/<secret_name>."
+  description = "Provide either a plaintext administrator password, the resource ID of an Azure Key Vault secret (<key_vault_resource_id>/secrets/<secret_name>), or a Key Vault secret URI (https://<vault>.vault.azure.net/secrets/<secret_name>/<version>)."
 
   validation {
     condition = (
-      # Option A: Valid Azure Key Vault secret resource ID
+      # Option A: Valid Azure Key Vault secret ARM resource ID
       can(regex("^/subscriptions/[0-9a-fA-F-]+/resourceGroups/[^/]+/providers/Microsoft\\.KeyVault/vaults/[^/]+/secrets/[^/]+$", var.admin_pwd_or_keyvault_secret_id)) ||
 
-      # Option B: Plaintext Password Criteria
-      # Azure requires 8-128 characters containing at least 3 of: lowercase, uppercase, number, special character.
+      # Option B: Valid Azure Key Vault secret URI, e.g. https://<vault>.vault.azure.net/secrets/<name>/<version>
+      # This is the form shown in the Azure Portal and by `az keyvault secret show`.
+      can(regex("^https://[a-zA-Z0-9-]+\\.vault\\.(azure\\.net|usgovcloudapi\\.net)/secrets/[a-zA-Z0-9-]+(/[a-zA-Z0-9]+)?/?$", var.admin_pwd_or_keyvault_secret_id)) ||
+
+      # Option C: Plaintext Password Criteria
+      # Must not resemble a URL or resource ID (a common copy-paste mistake that would otherwise be
+      # silently treated as a literal password). Azure VMs require 6-72 characters containing at
+      # least 3 of: lowercase, uppercase, number, special character.
       (
+        !can(regex("^(https?://|/subscriptions/)", var.admin_pwd_or_keyvault_secret_id)) &&
         length(var.admin_pwd_or_keyvault_secret_id) >= 8 &&
-        length(var.admin_pwd_or_keyvault_secret_id) <= 128 &&
+        length(var.admin_pwd_or_keyvault_secret_id) <= 72 &&
         (
           (can(regex("[a-z]", var.admin_pwd_or_keyvault_secret_id)) ? 1 : 0) +
           (can(regex("[A-Z]", var.admin_pwd_or_keyvault_secret_id)) ? 1 : 0) +
@@ -43,7 +50,7 @@ variable "admin_pwd_or_keyvault_secret_id" {
         ) >= 3
       )
     )
-    error_message = "The admin_pwd_or_keyvault_secret_id must be either a valid Azure Key Vault secret resource ID (/subscriptions/.../vaults/<vault>/secrets/<secret>), or a password that is 8-128 characters long containing at least 3 of: lowercase letter, uppercase letter, number, special character."
+    error_message = "The admin_pwd_or_keyvault_secret_id must be a valid Azure Key Vault secret resource ID (/subscriptions/.../vaults/<vault>/secrets/<secret>), a Key Vault secret URI (https://<vault>.vault.azure.net/secrets/<secret>/<version>), or a plaintext password that is 8-72 characters long containing at least 3 of: lowercase letter, uppercase letter, number, special character. A value starting with http(s):// or /subscriptions/ that doesn't match either reference format is rejected rather than used as a literal password."
   }
 }
 
