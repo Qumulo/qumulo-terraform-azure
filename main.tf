@@ -85,13 +85,11 @@ resource "qumulo_filesystem_azure" "cluster" {
   networking_mode                         = var.networking_mode
   nexus_registration_key                  = var.nexus_registration_key
   node_count                              = var.node_count
-  node_hooks                              = var.node_hooks
   nsg_allow_ingress_icmp                  = var.nsg_allow_ingress_icmp
   persistent_storage_resource_group       = var.persistent_storage_resource_group
   private_link_appconfig_dns_zone_id      = var.private_link_appconfig_dns_zone_id
   private_link_keyvault_dns_zone_id       = var.private_link_keyvault_dns_zone_id
   provisioner_custom_image_id             = var.provisioner_custom_image_id
-  provisioner_hooks                       = var.provisioner_hooks
   provisioner_identity_id                 = var.provisioner_identity_id
   provisioner_marketplace_image           = var.provisioner_marketplace_image
   provisioner_vm_type                     = var.provisioner_vm_type
@@ -103,6 +101,17 @@ resource "qumulo_filesystem_azure" "cluster" {
   subnet_id                               = var.subnet_id
   tags                                    = var.tags
   vm_type                                 = var.vm_type
+
+  node_hooks = {
+    pre_run  = var.node_hooks_files.pre_run_file == null ? null : file("${path.module}/hooks/${var.node_hooks_files.pre_run_file}")
+    post_run = var.node_hooks_files.post_run_file == null ? null : file("${path.module}/hooks/${var.node_hooks_files.post_run_file}")
+    override = var.node_hooks_files.override_file == null ? null : file("${path.module}/hooks/${var.node_hooks_files.override_file}")
+  }
+  provisioner_hooks = {
+    pre_run  = var.provisioner_hooks_files.pre_run_file == null ? null : file("${path.module}/hooks/${var.provisioner_hooks_files.pre_run_file}")
+    post_run = var.provisioner_hooks_files.post_run_file == null ? null : file("${path.module}/hooks/${var.provisioner_hooks_files.post_run_file}")
+    override = var.provisioner_hooks_files.override_file == null ? null : file("${path.module}/hooks/${var.provisioner_hooks_files.override_file}")
+  }
 
   timeouts {
     create = "${tostring(var.provider_timeout_minutes)}m"

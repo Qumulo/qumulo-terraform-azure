@@ -238,12 +238,12 @@ variable "node_count" {
   nullable    = false
 }
 
-variable "node_hooks" {
-  description = "OPTIONAL: Advanced use only. Shell spliced into each node's boot script at pre_run (before first network operation) / post_run (after qumulo-core install) anchors. Runs only on first boot. override replaces the entire node boot script."
+variable "node_hooks_files" {
+  description = "OPTIONAL: Advanced use only. Filenames (relative to the hooks/ directory) spliced into each node's boot script at pre_run_file (before first network operation) / post_run_file (after qumulo-core install) anchors. Runs only on first boot. override_file replaces the entire node boot script."
   type = object({
-    pre_run  = optional(string)
-    post_run = optional(string)
-    override = optional(string)
+    pre_run_file  = optional(string)
+    post_run_file = optional(string)
+    override_file = optional(string)
   })
   default  = null
   nullable = true
@@ -290,12 +290,12 @@ variable "provisioner_custom_image_id" {
   nullable    = true
 }
 
-variable "provisioner_hooks" {
-  description = "OPTIONAL: Advanced use only. Shell spliced into the provisioner's boot script at pre_run (after deployment variables are set) / post_run (after the cluster is formed and configured) anchors. override replaces the entire provisioner boot script."
+variable "provisioner_hooks_files" {
+  description = "OPTIONAL: Advanced use only. Filenames (relative to the hooks/ directory) spliced into the provisioner's boot script at pre_run_file (after deployment variables are set) / post_run_file (after the cluster is formed and configured) anchors. override_file replaces the entire provisioner boot script."
   type = object({
-    pre_run  = optional(string)
-    post_run = optional(string)
-    override = optional(string)
+    pre_run_file  = optional(string)
+    post_run_file = optional(string)
+    override_file = optional(string)
   })
   default  = null
   nullable = true
