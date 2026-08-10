@@ -23,7 +23,7 @@
 variable "admin_pwd_or_keyvault_secret_id" {
   type        = string
   sensitive   = true
-  description = "Provide either a plaintext administrator password, the resource ID of an Azure Key Vault secret (<key_vault_resource_id>/secrets/<secret_name>), or a Key Vault secret URI (https://<vault>.vault.azure.net/secrets/<secret_name>/<version>)."
+  description = "Provide either a plaintext administrator password, the resource ID of an Azure Key Vault secret (<key_vault_resource_id>/secrets/<secret_name>), or a Key Vault secret URI (https://<vault>.vault.azure.net/secrets/<secret_name>/<version>). This value is write-only and only used at cluster creation; editing it later does not change the cluster's admin password -- use the Qumulo UI or qumulo-cli to change it after creation."
 
   validation {
     condition = (
