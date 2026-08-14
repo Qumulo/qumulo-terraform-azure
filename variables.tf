@@ -20,6 +20,12 @@
 #OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #SOFTWARE.
 
+#Intentionally not `ephemeral = true`: this module reads the value (regex-matching it as an ARM
+#ID, a Key Vault URI, or a plaintext password, then looking up the vault by name) before ever
+#passing it to the provider. That detection/lookup path cannot work with an ephemeral value --
+#ephemeral values are only permitted in write-only resource arguments, not in the `name`/`count`
+#style arguments this module's Key Vault resolution depends on. sensitive = true already keeps it
+#out of logs/plan output and satisfies the provider's write-only admin_password argument.
 variable "admin_pwd_or_keyvault_secret_id" {
   type        = string
   sensitive   = true
@@ -122,6 +128,13 @@ variable "cluster_product_type" {
   }
 }
 
+variable "cluster_uuid" {
+  description = "OPTIONAL: UUID of an existing Qumulo cluster to import/adopt, for the rare case where the cluster's UUID cannot be auto-recovered. Leave null for new deployments."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 variable "cluster_version" {
   description = "OPTIONAL: Qumulo software version. Defaults to latest. Immutable after creation. Upgrade version via cluster UI/API."
   type        = string
@@ -130,10 +143,15 @@ variable "cluster_version" {
 }
 
 variable "custom_image_id" {
-  description = "OPTIONAL: Custom VM image resource ID for cluster nodes. If omitted, the default Qumulo image (Ubuntu) is used."
+  description = "OPTIONAL: Custom VM image resource ID for cluster nodes. If omitted, the default Qumulo image (Ubuntu) is used. Mutually exclusive with marketplace_image."
   type        = string
   default     = null
   nullable    = true
+
+  validation {
+    condition     = !(var.custom_image_id != null && var.marketplace_image != null)
+    error_message = "Set only one of custom_image_id or marketplace_image for cluster nodes, not both."
+  }
 }
 
 variable "deletion_protection" {
@@ -224,8 +242,23 @@ variable "networking_mode" {
   }
 }
 
+variable "nexus_account_id" {
+  description = "OPTIONAL: Qumulo Nexus organization ID to onboard newly-created clusters to. Only relevant when nexus_api_token is set; omit to let the provider auto-resolve the organization from the token's binding."
+  type        = number
+  default     = null
+  nullable    = true
+}
+
+variable "nexus_api_token" {
+  description = "OPTIONAL: Qumulo Nexus API token. When set, the provider auto-mints nexus_registration_key and onboards new clusters to Nexus Fleet automatically; any value supplied to nexus_registration_key is ignored. Leave null (with nexus_registration_key) to skip Nexus onboarding entirely."
+  type        = string
+  sensitive   = true
+  default     = null
+  nullable    = true
+}
+
 variable "nexus_registration_key" {
-  description = "OPTIONAL: (Deprecated) Qumulo Nexus registration key for remote support."
+  description = "OPTIONAL: (Deprecated) Qumulo Nexus registration key for remote support. Ignored when nexus_api_token is set on the provider."
   type        = string
   sensitive   = true
   default     = null
@@ -277,17 +310,43 @@ variable "private_link_keyvault_dns_zone_id" {
 }
 
 variable "provider_timeout_minutes" {
-  description = "The total time after which Terraform will abandon the provider deployment of the Qumulo cluster and timeout. In minutes."
+  description = "The default timeout (in minutes) applied to any of create/update/delete not individually overridden by provider_create_timeout_minutes / provider_update_timeout_minutes / provider_delete_timeout_minutes below."
   type        = number
   default     = 30
   nullable    = false
 }
 
+variable "provider_create_timeout_minutes" {
+  description = "OPTIONAL: Timeout override (in minutes) for cluster creation. Defaults to provider_timeout_minutes if unset. The provider's own built-in default (used only if the whole timeouts block were omitted) is 90 minutes."
+  type        = number
+  default     = null
+  nullable    = true
+}
+
+variable "provider_update_timeout_minutes" {
+  description = "OPTIONAL: Timeout override (in minutes) for cluster updates (e.g. scaling, vm_type changes). Defaults to provider_timeout_minutes if unset. The provider's own built-in default (used only if the whole timeouts block were omitted) is 60 minutes."
+  type        = number
+  default     = null
+  nullable    = true
+}
+
+variable "provider_delete_timeout_minutes" {
+  description = "OPTIONAL: Timeout override (in minutes) for cluster deletion. Defaults to provider_timeout_minutes if unset. The provider's own built-in default (used only if the whole timeouts block were omitted) is 30 minutes."
+  type        = number
+  default     = null
+  nullable    = true
+}
+
 variable "provisioner_custom_image_id" {
-  description = "OPTIONAL: Custom VM image resource ID for the provisioner instance. Defaults to the default Qumulo image."
+  description = "OPTIONAL: Custom VM image resource ID for the provisioner instance. Defaults to the default Qumulo image. Mutually exclusive with provisioner_marketplace_image."
   type        = string
   default     = null
   nullable    = true
+
+  validation {
+    condition     = !(var.provisioner_custom_image_id != null && var.provisioner_marketplace_image != null)
+    error_message = "Set only one of provisioner_custom_image_id or provisioner_marketplace_image, not both."
+  }
 }
 
 variable "provisioner_hooks_files" {
@@ -385,7 +444,7 @@ variable "tags" {
 }
 
 variable "vm_type" {
-  description = "Azure VM size for cluster nodes. Only L-series storage-optimized VMs are supported (e.g. Standard_L8s_v3)."
+  description = "Azure VM size for cluster nodes. Only L-series storage-optimized VMs are supported (e.g. Standard_L8s_v4)."
   type        = string
   nullable    = false
 }

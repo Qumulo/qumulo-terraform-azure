@@ -54,10 +54,14 @@ tags = {
 # cluster_name                   - Name of the Qumulo cluster (2-15 characters, case preserved). Dash (-) is allowed if not the first or last character.
 # node_count                     - Number of nodes in the cluster. Valid values: 1 (single node), or 3-24. 2 is not supported, 4 requires a single availability zone.
 # deletion_protection            - Protects the cluster's VMs and storage accounts from deletion with CanNotDelete management locks. Default = true. Set to false to destroy.
+# cluster_uuid                   - (OPTIONAL) UUID of an existing cluster to import/adopt. Leave null for new deployments.
 # cluster_version                - (OPTIONAL) Qumulo software version. Defaults to latest. Immutable after creation. Upgrade version via cluster UI/API.
 # floating_ip_count              - (OPTIONAL) Number of floating IPs to assign to the cluster. Must be 0, or between 3 and 100. Requires networking_mode "host_managed". Default=3.
-# nexus_registration_key         - (OPTIONAL, Deprecated) Qumulo Nexus registration key for remote support. Obtain from https://nexus.qumulo.com/user/registration-key
-# provider_timeout_minutes       - (OPTIONAL) The total time, in minutes, after which Terraform will abandon the provider deployment of the Qumulo cluster and timeout. Default is 30 minutes.
+# nexus_registration_key         - (OPTIONAL, Deprecated) Qumulo Nexus registration key for remote support. Obtain from https://nexus.qumulo.com/user/registration-key. Ignored if nexus_api_token is set (see OPTIONAL ADVANCED SETTINGS below).
+# provider_timeout_minutes       - (OPTIONAL) The default timeout, in minutes, applied to any of create/update/delete not overridden individually below. Default is 30 minutes.
+# provider_create_timeout_minutes - (OPTIONAL) Timeout override for cluster creation, in minutes. Defaults to provider_timeout_minutes if unset. Consider raising this for larger node_count deployments.
+# provider_update_timeout_minutes - (OPTIONAL) Timeout override for cluster updates (scaling, vm_type changes), in minutes. Defaults to provider_timeout_minutes if unset.
+# provider_delete_timeout_minutes - (OPTIONAL) Timeout override for cluster deletion, in minutes. Defaults to provider_timeout_minutes if unset.
 # storage_class                  - (OPTIONAL) HOT cluster default is INTELLIGENT_TIERING, or override to STANDARD.
 # storage_replication_type       - (OPTIONAL) Azure storage replication type (immutable after creation). LRS or ZRS.
 # soft_capacity_limit_tb         - (OPTIONAL) Soft capacity limit in TB (50 to 10000). Default is 500TB. Can be increased to add storage, but cannot be decreased.  It's like a quota, unused capacity is not billed.
@@ -70,13 +74,17 @@ node_count                      = 3
 deletion_protection             = true
 
 #------------OPTIONAL------------------
-cluster_version          = null
-floating_ip_count        = 3
-nexus_registration_key   = null
-provider_timeout_minutes = 30
-storage_class            = null
-storage_replication_type = null
-soft_capacity_limit_tb   = 100
+cluster_uuid                    = null
+cluster_version                 = null
+floating_ip_count               = 3
+nexus_registration_key          = null
+provider_timeout_minutes        = 30
+provider_create_timeout_minutes = null
+provider_update_timeout_minutes = null
+provider_delete_timeout_minutes = null
+storage_class                   = null
+storage_replication_type        = null
+soft_capacity_limit_tb          = 100
 
 # ***** Miscellaneous Variables *******
 # If boot behavior needs to be completely overridden contact support@qumulo.com or your Qumulo SE/SA.  Typically most needs can be accomodated with these pre/post hooks.  Hooks look in the hooks/ directory for the file.
@@ -102,8 +110,11 @@ provisioner_hooks_files = {
 # persistent_storage_resource_group       - (OPTIONAL) Resource group containing persistent storage accounts and Key Vault, if different from resource_group_name.
 # private_link_appconfig_dns_zone_id      - (OPTIONAL) Resource ID of the privatelink.azconfig.io private DNS zone.
 # private_link_keyvault_dns_zone_id       - (OPTIONAL) Resource ID of the privatelink.vaultcore.azure.net private DNS zone.
-# marketplace_image / provisioner_marketplace_image - (OPTIONAL) Azure Marketplace image specs; see aws-custom-images.md equivalent guidance in the provider docs.
+# marketplace_image / provisioner_marketplace_image - (OPTIONAL) Azure Marketplace image specs. Defaults to Ubuntu if unset. See examples/azure-rhel.tf for a populated RHEL 8/9 example, e.g.:
+#   marketplace_image = [{ publisher = "RedHat", offer = "RHEL", sku = "9-lvm-gen2", version = "latest" }]
 # naming                                  - (OPTIONAL) Custom naming templates for Azure resources.
+# nexus_api_token                         - (OPTIONAL) Qumulo Nexus API token (provider-level). When set, auto-mints nexus_registration_key and onboards to Nexus Fleet automatically.
+# nexus_account_id                        - (OPTIONAL) Qumulo Nexus organization ID (provider-level). Only relevant when nexus_api_token is set; omit to auto-resolve from the token.
 disable_appconfig_public_network_access = false
 disable_keyvault_public_network_access  = false
 networking_mode                         = null
@@ -114,6 +125,8 @@ private_link_keyvault_dns_zone_id       = null
 marketplace_image                       = null
 provisioner_marketplace_image           = null
 naming                                  = null
+nexus_api_token                         = null
+nexus_account_id                        = null
 
 # ***** OPTIONAL Cluster DNS *****
 # cluster_fqdn - For clusters that want Qumulo Core to answer DNS queries directly with floating IPs (no separate DNS forwarder needed, unlike the AWS Route 53 Resolver pattern).

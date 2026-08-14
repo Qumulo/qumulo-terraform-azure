@@ -48,6 +48,12 @@ data "azurerm_subnet" "selected" {
 locals {
   allow_cidrs    = var.allow_cidrs == null ? data.azurerm_subnet.selected.address_prefixes : var.allow_cidrs
   ssh_public_key = var.ssh_public_key_path == null ? null : file(pathexpand(var.ssh_public_key_path))
+
+  # node_hooks_files/provisioner_hooks_files default to null as a whole object; fall back to an
+  # all-null object so main.tf can safely dereference .pre_run_file/.post_run_file/.override_file
+  # below even when the variable is omitted entirely.
+  node_hooks_files_safe        = var.node_hooks_files == null ? { pre_run_file = null, post_run_file = null, override_file = null } : var.node_hooks_files
+  provisioner_hooks_files_safe = var.provisioner_hooks_files == null ? { pre_run_file = null, post_run_file = null, override_file = null } : var.provisioner_hooks_files
 }
 
 #This resource reads an Azure Key Vault secret if a secret resource ID is provided, or accepts a text based admin password.  One or the other must be provided.
@@ -71,6 +77,7 @@ resource "qumulo_filesystem_azure" "cluster" {
   cluster_name                            = var.cluster_name
   cluster_node_identity_id                = var.cluster_node_identity_id
   cluster_product_type                    = var.cluster_product_type
+  cluster_uuid                            = var.cluster_uuid
   cluster_version                         = var.cluster_version
   custom_image_id                         = var.custom_image_id
   deletion_protection                     = var.deletion_protection
@@ -103,19 +110,19 @@ resource "qumulo_filesystem_azure" "cluster" {
   vm_type                                 = var.vm_type
 
   node_hooks = {
-    pre_run  = var.node_hooks_files.pre_run_file == null ? null : file("${path.module}/hooks/${var.node_hooks_files.pre_run_file}")
-    post_run = var.node_hooks_files.post_run_file == null ? null : file("${path.module}/hooks/${var.node_hooks_files.post_run_file}")
-    override = var.node_hooks_files.override_file == null ? null : file("${path.module}/hooks/${var.node_hooks_files.override_file}")
+    pre_run  = local.node_hooks_files_safe.pre_run_file == null ? null : file("${path.module}/hooks/${local.node_hooks_files_safe.pre_run_file}")
+    post_run = local.node_hooks_files_safe.post_run_file == null ? null : file("${path.module}/hooks/${local.node_hooks_files_safe.post_run_file}")
+    override = local.node_hooks_files_safe.override_file == null ? null : file("${path.module}/hooks/${local.node_hooks_files_safe.override_file}")
   }
   provisioner_hooks = {
-    pre_run  = var.provisioner_hooks_files.pre_run_file == null ? null : file("${path.module}/hooks/${var.provisioner_hooks_files.pre_run_file}")
-    post_run = var.provisioner_hooks_files.post_run_file == null ? null : file("${path.module}/hooks/${var.provisioner_hooks_files.post_run_file}")
-    override = var.provisioner_hooks_files.override_file == null ? null : file("${path.module}/hooks/${var.provisioner_hooks_files.override_file}")
+    pre_run  = local.provisioner_hooks_files_safe.pre_run_file == null ? null : file("${path.module}/hooks/${local.provisioner_hooks_files_safe.pre_run_file}")
+    post_run = local.provisioner_hooks_files_safe.post_run_file == null ? null : file("${path.module}/hooks/${local.provisioner_hooks_files_safe.post_run_file}")
+    override = local.provisioner_hooks_files_safe.override_file == null ? null : file("${path.module}/hooks/${local.provisioner_hooks_files_safe.override_file}")
   }
 
   timeouts {
-    create = "${tostring(var.provider_timeout_minutes)}m"
-    delete = "${tostring(var.provider_timeout_minutes)}m"
-    update = "${tostring(var.provider_timeout_minutes)}m"
+    create = "${tostring(coalesce(var.provider_create_timeout_minutes, var.provider_timeout_minutes))}m"
+    delete = "${tostring(coalesce(var.provider_delete_timeout_minutes, var.provider_timeout_minutes))}m"
+    update = "${tostring(coalesce(var.provider_update_timeout_minutes, var.provider_timeout_minutes))}m"
   }
 }

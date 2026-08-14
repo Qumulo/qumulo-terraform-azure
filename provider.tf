@@ -34,6 +34,11 @@ provider "azurerm" {
 }
 
 provider "qumulo" {
+  # OPTIONAL: auto-mints the deprecated per-cluster nexus_registration_key and onboards new
+  # clusters to Nexus Fleet automatically. Leave both null to skip Nexus onboarding entirely.
+  nexus_api_token  = var.nexus_api_token
+  nexus_account_id = var.nexus_account_id
+
   azure {
     # Standard Azure credential chain applies (env vars, Azure CLI, managed
     # identity). No explicit credentials are required here.

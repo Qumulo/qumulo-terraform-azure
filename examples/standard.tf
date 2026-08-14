@@ -6,7 +6,7 @@ module "cloud_native_qumulo" {
   location            = "eastus2"
   resource_group_name = "rg-qumulo"
   subnet_id           = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-network-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"
-  vm_type             = "Standard_L8s_v3"
+  vm_type             = "Standard_L8s_v4"
 
   #------------OPTIONAL------------------
   allow_cidrs                 = null
