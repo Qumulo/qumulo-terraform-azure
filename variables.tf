@@ -29,7 +29,7 @@
 variable "admin_pwd_or_keyvault_secret_id" {
   type        = string
   sensitive   = true
-  description = "Provide either a plaintext administrator password, the resource ID of an Azure Key Vault secret (<key_vault_resource_id>/secrets/<secret_name>), or a Key Vault secret URI (https://<vault>.vault.azure.net/secrets/<secret_name>/<version>). This value is write-only and only used at cluster creation; editing it later does not change the cluster's admin password -- use the Qumulo UI or qumulo-cli to change it after creation."
+  description = "Provide either a plaintext administrator password, the resource ID of an Azure Key Vault secret (<key_vault_resource_id>/secrets/<secret_name>), or a Key Vault secret URI (https://<vault>.vault.azure.net/secrets/<secret_name>/<version>). The URI's optional /<version> segment is accepted but ignored -- Terraform always reads the secret's current/latest version, even if an older version is named. This value is write-only and only used at cluster creation; editing it later, or rotating the secret in Key Vault, does not change the cluster's admin password -- use the Qumulo UI or qumulo-cli to change it after creation, and do so any time you rotate the Key Vault secret to keep the two in sync. WARNING: there is no pre-flight check that this value matches the existing cluster's actual password -- if it has drifted out of sync, an apply that needs to authenticate to an existing cluster (e.g. scaling, vm_type changes) can fail partway through without automatic cleanup. Verify the two match before applying changes to an existing cluster."
 
   validation {
     condition = (

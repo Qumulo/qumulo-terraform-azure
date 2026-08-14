@@ -25,7 +25,10 @@ locals {
   is_arm_ref = can(regex("^/subscriptions/[0-9a-fA-F-]+/resourceGroups/[^/]+/providers/Microsoft\\.KeyVault/vaults/[^/]+/secrets/[^/]+$", var.admin_pwd_or_keyvault_secret_id))
 
   # 1b. Check if the input is a Key Vault secret URI, e.g. https://<vault>.vault.azure.net/secrets/<name>/<version>
-  # This is the form shown in the Azure Portal and by `az keyvault secret show`.
+  # This is the form shown in the Azure Portal and by `az keyvault secret show`. The trailing
+  # /<version> segment is OPTIONAL and accepted here purely so a URI copy-pasted straight from
+  # the Portal (which always includes a version) parses successfully -- see the note below on why
+  # it is never used to pin a specific version.
   is_uri_ref = can(regex("^https://[a-zA-Z0-9-]+\\.vault\\.(azure\\.net|usgovcloudapi\\.net)/secrets/[a-zA-Z0-9-]+(/[a-zA-Z0-9]+)?/?$", var.admin_pwd_or_keyvault_secret_id))
 
   is_keyvault_ref = local.is_arm_ref || local.is_uri_ref
@@ -36,7 +39,10 @@ locals {
     var.admin_pwd_or_keyvault_secret_id
   ) : null
 
-  # 2b. Split a URI reference into the vault name and the secret name
+  # 2b. Split a URI reference into the vault name and the secret name. Any version segment present
+  # in the URI is matched here (so the regex above still accepts it) but deliberately discarded --
+  # see the data source below for why this always resolves to Key Vault's CURRENT/LATEST version,
+  # never a pinned one, regardless of what version (if any) the URI names.
   uri_ref_parts = local.is_uri_ref ? regex(
     "^https://(?P<vault_name>[a-zA-Z0-9-]+)\\.vault\\.(?:azure\\.net|usgovcloudapi\\.net)/secrets/(?P<secret_name>[a-zA-Z0-9-]+)(?:/[a-zA-Z0-9]+)?/?$",
     var.admin_pwd_or_keyvault_secret_id
@@ -70,7 +76,34 @@ data "azurerm_resources" "by_vault_name" {
   name  = local.uri_ref_parts.vault_name
 }
 
-# Only fetches from Azure Key Vault if the single input was detected as a secret reference
+# Only fetches from Azure Key Vault if the single input was detected as a secret reference.
+#
+# IMPORTANT: `version` is intentionally left unset, so this ALWAYS reads the secret's current/
+# latest enabled version at plan/apply time -- even if the admin_pwd_or_keyvault_secret_id URI you
+# supplied includes an older version segment (e.g. copied straight from the Azure Portal or from
+# `az keyvault secret show`, which always shows a specific version). That version segment is
+# accepted for convenience but is otherwise ignored; it is never used to pin a fetch to an older
+# value. If you rotate the secret in Key Vault, the next Terraform run picks up the new value.
+#
+# Also note: admin_password on the underlying cluster resource is write-only and is only read and
+# applied once, at cluster CREATION. Rotating the Key Vault secret afterward does NOT retroactively
+# change the password on an already-running cluster, and Terraform will show no diff either way --
+# the provider never re-reads or re-applies this argument after creation. If you rotate the secret
+# in Key Vault, you must also change the running cluster's admin password directly (Qumulo UI or
+# qumulo-cli) to keep the two in sync; Terraform/Key Vault cannot do this for you.
+#
+# WARNING -- known failure mode on an EXISTING cluster: if the value resolved here no longer
+# matches the cluster's actual current admin password (because the two drifted out of sync per the
+# note above), an apply that needs to authenticate to the running cluster -- e.g. scaling
+# node_count, changing vm_type, or anything else that touches existing nodes -- can fail partway
+# through, after Azure resources have already started being created/modified. Terraform does not
+# automatically roll back or clean up in that situation; you may be left with partially-provisioned
+# resources requiring manual cleanup. There is no pre-flight check here that verifies this password
+# against the live cluster before changes begin (doing so safely would require calling the
+# cluster's REST API login endpoint, which cannot be done from a plain Terraform data source without
+# writing the plaintext password into the state file -- confirmed by testing, not just assumed).
+# Before applying any change to an EXISTING cluster, verify the resolved password still matches
+# what the cluster actually has configured.
 data "azurerm_key_vault_secret" "selected" {
   count        = local.is_keyvault_ref ? 1 : 0
   name         = local.keyvault_secret_name

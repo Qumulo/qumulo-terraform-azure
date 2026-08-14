@@ -48,8 +48,14 @@ tags = {
 # admin_pwd_or_keyvault_secret_id - The password may be provided as text OR pulled from Azure Key Vault by referencing the secret's resource ID
 #                                    (/subscriptions/.../vaults/<vault>/secrets/<secret>) or its secret URI (https://<vault>.vault.azure.net/secrets/<secret>/<version>).
 #                                    Admin password requirements: 8-72 characters long containing at least 3 of: lowercase letter, uppercase letter, number, special character. Sensitive -- not stored in Terraform state.
-#                                    This value is write-only and is only used at cluster creation. Editing it here later does NOT change the cluster's admin password -- Terraform will show no change.
-#                                    To change the admin password after creation, use the Qumulo UI or qumulo-cli.
+#                                    If you use the URI form, the trailing /<version> segment is accepted (so a URI copied straight from the Portal parses fine) but is IGNORED --
+#                                    Terraform always pulls the CURRENT/LATEST version of that Key Vault secret, even if the version you pasted is an older one.
+#                                    This value is write-only and is only used at cluster creation. Editing it here later, or rotating the secret in Key Vault, does NOT change
+#                                    the cluster's admin password -- Terraform will show no change either way. To change the admin password after creation (including any time
+#                                    you rotate the Key Vault secret), use the Qumulo UI or qumulo-cli directly on the cluster to keep the two in sync.
+#                                    WARNING: there is no pre-flight check that this value matches an EXISTING cluster's actual password. If it has drifted out of
+#                                    sync, applying a change that needs to authenticate to the cluster (scaling, vm_type changes, etc.) can fail partway through
+#                                    with no automatic cleanup. Verify the two match before applying changes to an existing cluster.
 # cluster_product_type           - Cluster storage product type (immutable after creation). HOT: Optimized for frequently accessed data. COLD: Optimized for archival/infrequently accessed data.
 # cluster_name                   - Name of the Qumulo cluster (2-15 characters, case preserved). Dash (-) is allowed if not the first or last character.
 # node_count                     - Number of nodes in the cluster. Valid values: 1 (single node), or 3-24. 2 is not supported, 4 requires a single availability zone.
