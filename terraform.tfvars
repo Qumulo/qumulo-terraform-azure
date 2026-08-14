@@ -50,9 +50,10 @@ tags = {
 #                                    Admin password requirements: 8-72 characters long containing at least 3 of: lowercase letter, uppercase letter, number, special character. Sensitive -- not stored in Terraform state.
 #                                    If you use the URI form, the trailing /<version> segment is accepted (so a URI copied straight from the Portal parses fine) but is IGNORED --
 #                                    Terraform always pulls the CURRENT/LATEST version of that Key Vault secret, even if the version you pasted is an older one.
-#                                    This value is write-only and is only used at cluster creation. Editing it here later, or rotating the secret in Key Vault, does NOT change
-#                                    the cluster's admin password -- Terraform will show no change either way. To change the admin password after creation (including any time
-#                                    you rotate the Key Vault secret), use the Qumulo UI or qumulo-cli directly on the cluster to keep the two in sync.
+#                                    This value is write-only, so Terraform never stores it in state -- but its current value is resupplied to the provider on every apply
+#                                    that touches this resource (not just creation), since node/vm_type changes must authenticate to the existing cluster with it. It does
+#                                    NOT itself rotate an already-running cluster's password though. To change the admin password after creation, use the Qumulo UI or
+#                                    qumulo-cli directly on the cluster, and update the Key Vault secret to match (or vice versa) any time you do.
 #                                    WARNING: there is no pre-flight check that this value matches an EXISTING cluster's actual password. If it has drifted out of
 #                                    sync, applying a change that needs to authenticate to the cluster (scaling, vm_type changes, etc.) can fail partway through
 #                                    with no automatic cleanup. Verify the two match before applying changes to an existing cluster.

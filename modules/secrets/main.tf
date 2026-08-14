@@ -85,12 +85,15 @@ data "azurerm_resources" "by_vault_name" {
 # accepted for convenience but is otherwise ignored; it is never used to pin a fetch to an older
 # value. If you rotate the secret in Key Vault, the next Terraform run picks up the new value.
 #
-# Also note: admin_password on the underlying cluster resource is write-only and is only read and
-# applied once, at cluster CREATION. Rotating the Key Vault secret afterward does NOT retroactively
-# change the password on an already-running cluster, and Terraform will show no diff either way --
-# the provider never re-reads or re-applies this argument after creation. If you rotate the secret
-# in Key Vault, you must also change the running cluster's admin password directly (Qumulo UI or
-# qumulo-cli) to keep the two in sync; Terraform/Key Vault cannot do this for you.
+# Also note: admin_password on the underlying cluster resource is write-only, so Terraform never
+# stores its value in state -- but its currently-resolved value IS supplied to the provider on
+# EVERY apply that touches this resource, not just at creation. Node/vm_type changes (scaling,
+# replacement, etc.) require the provider to authenticate to the existing cluster using this value,
+# so it must keep matching the cluster's actual current admin password for those operations to
+# succeed (see the WARNING below). What it does NOT do is rotate the password: supplying a new
+# value here does not itself change an already-running cluster's password. If you change the
+# password via the Qumulo UI or qumulo-cli, update the Key Vault secret to match (or vice versa) so
+# future applies keep authenticating successfully.
 #
 # WARNING -- known failure mode on an EXISTING cluster: if the value resolved here no longer
 # matches the cluster's actual current admin password (because the two drifted out of sync per the
