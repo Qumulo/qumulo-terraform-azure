@@ -2,7 +2,12 @@
 # *********** Azure Variables ***********
 # deployment_name               - A name for this deployment, lowercase letters, digits, and interior hyphens, 2-15 characters.
 # location                      - Azure region for deployment.
-# resource_group_name           - Azure resource group name. Created by the provider if it does not already exist.
+# resource_group_name           - Seed name for this deployment's Azure resource group -- NOT the literal name. An immutable random suffix is always
+#                                  appended (e.g. "rg-qumulo-h12g9v-rg") so every deployment gets its own dedicated resource group. WARNING: never
+#                                  point two Qumulo clusters (or any other VM) at the same resource group -- Azure floating IPs are attached as
+#                                  secondary IP configurations on node NICs, and the floating-IP reconciler strips secondary IPs from any NIC in the
+#                                  resource group it doesn't recognize as its own, with no cluster filter. Sharing a resource group causes clusters to
+#                                  fight over floating IPs indefinitely -- this has been observed firsthand as one cluster stealing another's IPs on boot.
 # subnet_id                     - Full Azure resource ID of the pre-configured subnet for cluster nodes. Must have the Microsoft.KeyVault and Microsoft.Storage service endpoints enabled.
 # vm_type                       - Azure VM size for cluster nodes. Only L-series storage-optimized VMs are supported (e.g. Standard_L8s_v4).
 # allow_cidrs                   - (OPTIONAL) CIDR blocks allowed to access the cluster (the subnet's address prefixes are used by default). Production clusters should restrict to known client/management networks. ie: 10.0.1.0/24

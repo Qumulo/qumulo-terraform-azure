@@ -387,7 +387,7 @@ variable "provisioner_vm_type" {
 }
 
 variable "resource_group_name" {
-  description = "Azure resource group name for the cluster. Created by the provider if it does not already exist."
+  description = "Seed name for this deployment's Azure resource group. An immutable random suffix is always appended (e.g. \"myrg-h12g9v-rg\") so every deployment gets its own dedicated resource group -- this is NOT the literal resource group name. WARNING: never point two Qumulo clusters at the same resource group, and never place any other VM/NIC into the resource group this deployment creates. Azure floating IPs are attached as secondary IP configurations on node NICs, and the floating-IP reconciler scopes by the ENTIRE resource group with no cluster filter -- it will strip secondary IPs from any NIC in the resource group it doesn't recognize as its own. Sharing a resource group causes clusters (or any other floating/secondary-IP-bearing VM) to fight over floating IPs indefinitely, which has been observed firsthand as one cluster stealing another's floating IPs on boot."
   type        = string
   nullable    = false
 }

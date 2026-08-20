@@ -30,6 +30,11 @@ output "cluster_uuid" {
   value       = qumulo_filesystem_azure.cluster.cluster_reference.cluster_uuid
 }
 
+output "resource_group_unique_name" {
+  description = "The actual, unique Azure resource group name used for this deployment (resource_group_name plus an immutable random suffix). Every deployment gets its own resource group -- see main.tf for why this must never be shared between clusters."
+  value       = local.resource_group_unique_name
+}
+
 output "deployment_unique_name" {
   description = "Unique deployment identifier"
   value       = qumulo_filesystem_azure.cluster.deployment_unique_name

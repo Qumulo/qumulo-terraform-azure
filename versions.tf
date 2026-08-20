@@ -28,6 +28,10 @@ terraform {
       source  = "hashicorp/azurerm"
       version = ">= 3.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = ">= 3.1"
+    }
     qumulo = {
       source  = "qumulo-terraform-registry.s3.us-east-1.amazonaws.com/qumulo/qumulo"
       version = ">= 1.4.6"
