@@ -28,10 +28,18 @@ module "cloud_native_qumulo_production" {
     long_running = "true"
   }
 
-  # Keep the provider's own control-plane services (Key Vault, App Configuration) off the
-  # public internet.
-  disable_appconfig_public_network_access = true
-  disable_keyvault_public_network_access  = true
+  # Take the deployment private post-deployment: the provider creates private endpoints for
+  # the storage accounts and Key Vault (public access stays on for the deployment itself),
+  # and the wrapper then owns DNS records, the App Configuration private endpoint, and the
+  # public-access lockdown. See examples/azure-private-link.tf for the staged flow.
+  create_private_endpoints = true
+  # Azure Private DNS records + the App Config endpoint land in the same apply (omit the
+  # zone IDs on the external-DNS path and use the private_endpoints output instead):
+  # blob_private_dns_zone_id      = "/subscriptions/<sub>/resourceGroups/<dns-rg>/providers/Microsoft.Network/privateDnsZones/privatelink.blob.core.windows.net"
+  # keyvault_private_dns_zone_id  = "/subscriptions/<sub>/resourceGroups/<dns-rg>/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.azure.net"
+  # appconfig_private_dns_zone_id = "/subscriptions/<sub>/resourceGroups/<dns-rg>/providers/Microsoft.Network/privateDnsZones/privatelink.azconfig.io"
+  # Last step of the same apply (Azure DNS path only; external-DNS callers lock down themselves):
+  # disable_public_network_access_post_deploy = true
 
   # ***** Qumulo Cluster Variables ******
   #-----------REQUIRED-------------------

@@ -143,3 +143,26 @@ nexus_account_id                        = null
 # cluster_fqdn - For clusters that want Qumulo Core to answer DNS queries directly with floating IPs (no separate DNS forwarder needed, unlike the AWS Route 53 Resolver pattern).
 #                This may be left 'null' to bypass any FQDN DNS resolution on the Qumulo cluster.
 cluster_fqdn = null
+
+# ***** OPTIONAL PRIVATE NETWORKING (post-deployment) *****
+# One apply deploys the cluster (public access on; the provider creates the private
+# endpoints for the storage accounts, Key Vault, and App Configuration as its final step,
+# no DNS attached), then -- in the same apply -- the wrapper creates the Azure Private DNS
+# A records (if the zone IDs are set), links the zones to the cluster VNet after the
+# records exist, and -- with disable_public_network_access_post_deploy set -- disables
+# public access as the last step. On the external-DNS path (e.g. Infoblox), leave the zone
+# IDs null and feed the private_endpoints output to your DNS system; lockdown is then yours
+# (fqdn/ip_address for records, target_resource_id for the publicNetworkAccess PATCH).
+# See README "Private networking (post-deployment)".
+# create_private_endpoints                  - (OPTIONAL) Enable the private-endpoint deployment mode. Conflicts with the legacy private_link_*/disable_* variables above.
+# blob_private_dns_zone_id                  - (OPTIONAL) privatelink.blob.core.windows.net zone resource ID for wrapper-created A records.
+# keyvault_private_dns_zone_id              - (OPTIONAL) privatelink.vaultcore.azure.net zone resource ID. Same subscription as the blob zone.
+# appconfig_private_dns_zone_id             - (OPTIONAL) privatelink.azconfig.io zone resource ID for the App Configuration endpoint record. Same subscription as the other zones.
+# manage_dns_zone_vnet_links                - (OPTIONAL, default true) Link the supplied zones to the cluster VNet after their records exist; false when pre-linked.
+# disable_public_network_access_post_deploy - (OPTIONAL) Disable public access on storage/Key Vault/App Configuration as the apply's last step. Azure DNS path only.
+# private_endpoints_override                - (INTERIM) Endpoint details, mirroring the provider outputs, until the release that ships them.
+create_private_endpoints                  = false
+blob_private_dns_zone_id                  = null
+keyvault_private_dns_zone_id              = null
+appconfig_private_dns_zone_id             = null
+disable_public_network_access_post_deploy = false

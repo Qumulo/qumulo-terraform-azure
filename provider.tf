@@ -33,6 +33,23 @@ provider "azurerm" {
   subscription_id = var.azure_subscription_id
 }
 
+# Aliased provider for private DNS zone record writes. Zones commonly live in a
+# hub subscription; the subscription is parsed from the supplied zone resource
+# IDs (see private-link.tf). With no zones supplied this collapses to the same
+# configuration as the default azurerm provider.
+provider "azurerm" {
+  alias = "dns"
+  features {}
+
+  subscription_id = local.dns_zone_subscription_id != null ? local.dns_zone_subscription_id : var.azure_subscription_id
+}
+
+# azapi performs the post-deployment public-network-access PATCHes on resources
+# the qumulo provider created (azurerm cannot manage resources it did not
+# create). Same default ARM credential chain; resources are addressed by
+# absolute ID, so no subscription pin is needed.
+provider "azapi" {}
+
 provider "qumulo" {
   # OPTIONAL: auto-mints the deprecated per-cluster nexus_registration_key and onboards new
   # clusters to Nexus Fleet automatically. Leave both null to skip Nexus onboarding entirely.
