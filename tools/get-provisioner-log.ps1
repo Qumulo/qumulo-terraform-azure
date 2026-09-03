@@ -34,11 +34,17 @@ if (-not $ctx -or -not $ctx.Subscription) {
 $rg = terraform output -raw resource_group_unique_name 2>$null
 if (-not $rg) {
     # No outputs recorded (e.g. apply failed very early): derive the resource
-    # group from the random suffix resource, which is created first.
+    # group from the random suffix resource, which is created first. The
+    # trailing label comes from the resource_group_name_suffix output so a
+    # customized suffix (e.g. "-westus2" instead of the "-rg" default) is
+    # still recovered correctly; falls back to the literal "-rg" default only
+    # against a module version that predates that output.
+    $suffixLabel = terraform output -raw resource_group_name_suffix 2>$null
+    if (-not $suffixLabel) { $suffixLabel = "-rg" }
     $state = terraform show -json | ConvertFrom-Json
     $suffix = $state.values.root_module.resources | Where-Object address -eq "random_string.resource_group_suffix"
     if ($suffix) {
-        $rg = "$($suffix.values.keepers.resource_group_name)-$($suffix.values.result)-rg"
+        $rg = "$($suffix.values.keepers.resource_group_name)-$($suffix.values.result)$suffixLabel"
     }
 }
 if (-not $rg) {
