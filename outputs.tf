@@ -35,6 +35,11 @@ output "resource_group_unique_name" {
   value       = local.resource_group_unique_name
 }
 
+output "resource_group_name_suffix" {
+  description = "The configured trailing label used in resource_group_unique_name (see the variable of the same name). Exposed as its own output, independent of local.resource_group_unique_name and the cluster resource, so tooling can recover the correct label even when only the random_string.resource_group_suffix resource exists in state (e.g. reconstructing the resource group name after a partially-failed deploy)."
+  value       = var.resource_group_name_suffix
+}
+
 output "deployment_unique_name" {
   description = "Unique deployment identifier"
   value       = qumulo_filesystem_azure.cluster.deployment_unique_name

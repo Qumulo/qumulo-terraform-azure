@@ -163,6 +163,7 @@ output "outputs_cloud_native_qumulo" {
 | <a name="output_endpoint_ips"></a> [endpoint\_ips](#output\_endpoint\_ips) | Client-facing IPs. Floating IPs if configured, otherwise primary node IPs. |
 | <a name="output_endpoints"></a> [endpoints](#output\_endpoints) | Connection endpoints for various protocols |
 | <a name="output_primary_ips"></a> [primary\_ips](#output\_primary\_ips) | Per-node primary IPs. Use these directly when no floating IPs are configured, or for per-node access. |
+| <a name="output_resource_group_name_suffix"></a> [resource\_group\_name\_suffix](#output\_resource\_group\_name\_suffix) | The configured trailing label used in `resource_group_unique_name`. Exposed independently so tooling can recover it even when only `random_string.resource_group_suffix` exists in state (e.g. after a partially-failed deploy). |
 | <a name="output_resource_group_unique_name"></a> [resource\_group\_unique\_name](#output\_resource\_group\_unique\_name) | The actual, unique Azure resource group name used for this deployment (resource\_group\_name plus an immutable random suffix). |
 | <a name="output_soft_capacity_limit_tb"></a> [soft\_capacity\_limit\_tb](#output\_soft\_capacity\_limit\_tb) | Total capacity the cluster may consume.  Only used capacity is billed. |
 
