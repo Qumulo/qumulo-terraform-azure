@@ -10,10 +10,11 @@
 #                                  fight over floating IPs indefinitely -- this has been observed firsthand as one cluster stealing another's IPs on boot.
 # subnet_id                     - Full Azure resource ID of the pre-configured subnet for cluster nodes. Must have the Microsoft.KeyVault and Microsoft.Storage service endpoints enabled.
 # vm_type                       - Azure VM size for cluster nodes. Only L-series storage-optimized VMs are supported (e.g. Standard_L8s_v4).
+# azure_subscription_id         - Azure subscription ID. The qumulo provider only falls back to the ARM_SUBSCRIPTION_ID environment variable, not the
+#                                  active Azure CLI context, so `az login` alone is not enough -- set this explicitly.
 # allow_cidrs                   - (OPTIONAL) CIDR blocks allowed to access the cluster (the subnet's address prefixes are used by default). Production clusters should restrict to known client/management networks. ie: 10.0.1.0/24
 # availability_zones            - (OPTIONAL) Availability zones for deployment, e.g. ["1", "2", "3"]. Omit for zoneless regions.
 # azure_environment             - (OPTIONAL) Azure cloud environment for the qumulo provider. "public" or "usgovernment". Default = "public".
-# azure_subscription_id         - (OPTIONAL) Azure subscription ID. If omitted, resolved from ARM_SUBSCRIPTION_ID or the active Azure CLI context.
 # cluster_node_identity_id      - (OPTIONAL) Resource ID of a user-assigned managed identity for cluster nodes. If omitted, the provider creates one.
 # custom_image_id               - (OPTIONAL) Custom VM image resource ID for cluster nodes. If omitted, the default Qumulo image (Ubuntu) is used.
 # key_vault_id                  - (OPTIONAL) Full Azure resource ID of a customer-managed Key Vault. If omitted, the provider creates one.
@@ -25,17 +26,17 @@
 #subnet_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-network-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"
 
 #-----------REQUIRED-------------------
-deployment_name     = "my-deployment"
-location            = "eastus2"
-resource_group_name = "rg-qumulo"
-subnet_id           = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-network-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"
-vm_type             = "Standard_L8s_v4"
+deployment_name       = "my-deployment"
+location              = "eastus2"
+resource_group_name   = "rg-qumulo"
+subnet_id             = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-network-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"
+vm_type               = "Standard_L8s_v4"
+azure_subscription_id = "00000000-0000-0000-0000-000000000000"
 
 #------------OPTIONAL------------------
 allow_cidrs                 = null
 availability_zones          = ["1", "2", "3"]
 azure_environment           = "public"
-azure_subscription_id       = null
 cluster_node_identity_id    = null
 custom_image_id             = null
 key_vault_id                = null
@@ -120,6 +121,9 @@ provisioner_hooks_files = {
 # networking_mode                         - (OPTIONAL) Network management mode for cluster nodes ("host_managed" default or "qumulo_managed").
 # nsg_allow_ingress_icmp                  - (OPTIONAL) Enable ICMP ingress in the NSG rules the provider creates, for network diagnostics.
 # persistent_storage_resource_group       - (OPTIONAL) Resource group containing persistent storage accounts and Key Vault, if different from resource_group_name.
+# resource_group_name_suffix              - (OPTIONAL) Trailing label after the random uniqueness suffix in the resource group name (default "-rg"). Purely
+#                                            cosmetic -- freeform, e.g. "-westus2" to match a region-based naming convention, or "" for none. Does NOT
+#                                            affect the uniqueness guarantee; the random suffix itself is always present regardless of this setting.
 # private_link_appconfig_dns_zone_id      - (OPTIONAL) Resource ID of the privatelink.azconfig.io private DNS zone.
 # private_link_keyvault_dns_zone_id       - (OPTIONAL) Resource ID of the privatelink.vaultcore.azure.net private DNS zone.
 # marketplace_image / provisioner_marketplace_image - (OPTIONAL) Azure Marketplace image specs. Defaults to Ubuntu if unset. See examples/azure-rhel.tf for a populated RHEL 8/9 example, e.g.:
@@ -132,6 +136,7 @@ disable_keyvault_public_network_access  = false
 networking_mode                         = null
 nsg_allow_ingress_icmp                  = false
 persistent_storage_resource_group       = null
+resource_group_name_suffix              = "-rg"
 private_link_appconfig_dns_zone_id      = null
 private_link_keyvault_dns_zone_id       = null
 marketplace_image                       = null

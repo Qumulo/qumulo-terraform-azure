@@ -2,17 +2,17 @@ module "cloud_native_qumulo" {
   source = "../"
   # ****************************** QUMULO PROVIDER VARIABLES ********************
   #-----------REQUIRED-------------------
-  deployment_name     = "cnq-deploy-01"
-  location            = "eastus2"
-  resource_group_name = "rg-qumulo"
-  subnet_id           = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-network-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"
-  vm_type             = "Standard_L8s_v4"
+  deployment_name       = "cnq-deploy-01"
+  location              = "eastus2"
+  resource_group_name   = "rg-qumulo"
+  subnet_id             = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-network-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"
+  vm_type               = "Standard_L8s_v4"
+  azure_subscription_id = "00000000-0000-0000-0000-000000000000"
 
   #------------OPTIONAL------------------
   allow_cidrs                 = null
   availability_zones          = ["1", "2", "3"]
   azure_environment           = "public"
-  azure_subscription_id       = null
   cluster_node_identity_id    = null
   custom_image_id             = null
   key_vault_id                = null

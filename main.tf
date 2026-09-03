@@ -65,8 +65,11 @@ locals {
 #indefinitely -- this has been observed firsthand as one cluster stealing another's floating IPs on boot.
 #To make this impossible to hit by accident, resource_group_name is treated as a seed: an immutable random
 #suffix is appended below to guarantee every deployment gets its own resource group, the same way
-#deployment_name becomes deployment_unique_name. There is no supported way to disable this -- do not
-#attempt to force two deployments to share a resource group.
+#deployment_name becomes deployment_unique_name. THIS RANDOM SUFFIX IS NOT OPTIONAL -- there is no
+#supported way to disable it, and do not attempt to force two deployments to share a resource group.
+#The trailing label after the random suffix (default "-rg") is purely cosmetic and IS customizable via
+#resource_group_name_suffix, e.g. for teams whose naming convention prefers a region code or nothing at
+#all -- see variables.tf. Changing it has no effect on the uniqueness guarantee above.
 resource "random_string" "resource_group_suffix" {
   length  = 6
   lower   = true
@@ -84,7 +87,7 @@ resource "random_string" "resource_group_suffix" {
 }
 
 locals {
-  resource_group_unique_name = "${var.resource_group_name}-${random_string.resource_group_suffix.result}-rg"
+  resource_group_unique_name = "${var.resource_group_name}-${random_string.resource_group_suffix.result}${var.resource_group_name_suffix}"
 }
 
 #This resource reads an Azure Key Vault secret if a secret resource ID is provided, or accepts a text based admin password.  One or the other must be provided.

@@ -87,10 +87,9 @@ variable "azure_environment" {
 }
 
 variable "azure_subscription_id" {
-  description = "OPTIONAL: Azure subscription ID. If omitted, resolved from the ARM_SUBSCRIPTION_ID environment variable or the active Azure CLI context."
+  description = "Azure subscription ID. Required -- the qumulo provider only falls back to the ARM_SUBSCRIPTION_ID environment variable, not the active Azure CLI context, so `az login` alone is not sufficient. Set this explicitly (or export ARM_SUBSCRIPTION_ID and pass it through as this variable's value)."
   type        = string
-  default     = null
-  nullable    = true
+  nullable    = false
 }
 
 variable "cluster_fqdn" {
@@ -387,8 +386,15 @@ variable "provisioner_vm_type" {
 }
 
 variable "resource_group_name" {
-  description = "Seed name for this deployment's Azure resource group. An immutable random suffix is always appended (e.g. \"myrg-h12g9v-rg\") so every deployment gets its own dedicated resource group -- this is NOT the literal resource group name. WARNING: never point two Qumulo clusters at the same resource group, and never place any other VM/NIC into the resource group this deployment creates. Azure floating IPs are attached as secondary IP configurations on node NICs, and the floating-IP reconciler scopes by the ENTIRE resource group with no cluster filter -- it will strip secondary IPs from any NIC in the resource group it doesn't recognize as its own. Sharing a resource group causes clusters (or any other floating/secondary-IP-bearing VM) to fight over floating IPs indefinitely, which has been observed firsthand as one cluster stealing another's floating IPs on boot."
+  description = "Seed name for this deployment's Azure resource group. An immutable random suffix is always appended (e.g. \"myrg-h12g9v-rg\", or see resource_group_name_suffix to customize the trailing \"-rg\" label) so every deployment gets its own dedicated resource group -- this is NOT the literal resource group name. WARNING: never point two Qumulo clusters at the same resource group, and never place any other VM/NIC into the resource group this deployment creates. Azure floating IPs are attached as secondary IP configurations on node NICs, and the floating-IP reconciler scopes by the ENTIRE resource group with no cluster filter -- it will strip secondary IPs from any NIC in the resource group it doesn't recognize as its own. Sharing a resource group causes clusters (or any other floating/secondary-IP-bearing VM) to fight over floating IPs indefinitely, which has been observed firsthand as one cluster stealing another's floating IPs on boot."
   type        = string
+  nullable    = false
+}
+
+variable "resource_group_name_suffix" {
+  description = "OPTIONAL: Trailing label appended after the random uniqueness suffix in the auto-generated resource group name (default \"-rg\", e.g. \"myrg-h12g9v-rg\"). Purely cosmetic -- freeform, set to whatever matches your naming convention (e.g. \"-westus2\", or \"\" for none). Does NOT affect the uniqueness guarantee: the random suffix between resource_group_name and this label is always present and is not customizable, since it's the mechanism that keeps every deployment's resource group dedicated (see main.tf)."
+  type        = string
+  default     = "-rg"
   nullable    = false
 }
 

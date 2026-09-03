@@ -35,17 +35,17 @@ module "cloud_native_qumulo" {
   source = "../"
   # ****************************** QUMULO PROVIDER VARIABLES ********************
   #-----------REQUIRED-------------------
-  deployment_name     = "cnq-deploy-01"
-  location            = "eastus2"
-  resource_group_name = "rg-qumulo"
-  subnet_id           = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-network-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"
-  vm_type             = "Standard_L8s_v4"
+  deployment_name       = "cnq-deploy-01"
+  location              = "eastus2"
+  resource_group_name   = "rg-qumulo"
+  subnet_id             = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-network-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"
+  vm_type                = "Standard_L8s_v4"
+  azure_subscription_id = "00000000-0000-0000-0000-000000000000"
 
   #------------OPTIONAL------------------
   allow_cidrs                 = null
   availability_zones          = ["1", "2", "3"]
   azure_environment           = "public"
-  azure_subscription_id       = null
   cluster_node_identity_id    = null
   custom_image_id             = null
   key_vault_id                = null
@@ -107,7 +107,7 @@ output "outputs_cloud_native_qumulo" {
 | <a name="input_allow_cidrs"></a> [allow\_cidrs](#input\_allow\_cidrs) | OPTIONAL: CIDR blocks allowed to access the cluster. Defaults to the cluster subnet's address prefixes if not provided. | `list(string)` | `null` | no |
 | <a name="input_availability_zones"></a> [availability\_zones](#input\_availability\_zones) | OPTIONAL: Availability zones for deployment, e.g. `["1", "2", "3"]`. Omit for zoneless regions. Zone support is validated dynamically by the provider. | `list(string)` | `null` | no |
 | <a name="input_azure_environment"></a> [azure\_environment](#input\_azure\_environment) | OPTIONAL: Azure cloud environment for the qumulo provider. | `string` | `"public"` | no |
-| <a name="input_azure_subscription_id"></a> [azure\_subscription\_id](#input\_azure\_subscription\_id) | OPTIONAL: Azure subscription ID. If omitted, resolved from the ARM\_SUBSCRIPTION\_ID environment variable or the active Azure CLI context. | `string` | `null` | no |
+| <a name="input_azure_subscription_id"></a> [azure\_subscription\_id](#input\_azure\_subscription\_id) | Azure subscription ID. Required -- the qumulo provider only falls back to the `ARM_SUBSCRIPTION_ID` environment variable, not the active Azure CLI context, so `az login` alone is not sufficient. | `string` | n/a | yes |
 | <a name="input_cluster_fqdn"></a> [cluster\_fqdn](#input\_cluster\_fqdn) | OPTIONAL: Fully qualified domain name for Qumulo Core authoritative DNS. When set, the cluster answers DNS queries with floating IPs. | `string` | `null` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the Qumulo cluster as it appears in qfsd and the UI (2-15 characters; case preserved; dash allowed if not first or last character). | `string` | n/a | yes |
 | <a name="input_cluster_node_identity_id"></a> [cluster\_node\_identity\_id](#input\_cluster\_node\_identity\_id) | OPTIONAL: Resource ID of a user-assigned managed identity for cluster nodes. If omitted, the provider creates one. | `string` | `null` | no |
@@ -143,7 +143,8 @@ output "outputs_cloud_native_qumulo" {
 | <a name="input_provisioner_identity_id"></a> [provisioner\_identity\_id](#input\_provisioner\_identity\_id) | OPTIONAL: Resource ID of a user-assigned managed identity for the provisioner VM. If omitted, the provider creates one. | `string` | `null` | no |
 | <a name="input_provisioner_marketplace_image"></a> [provisioner\_marketplace\_image](#input\_provisioner\_marketplace\_image) | OPTIONAL: Azure Marketplace image specification for the provisioner VM. | `list(object({ publisher = string, offer = string, sku = string, version = string }))` | `null` | no |
 | <a name="input_provisioner_vm_type"></a> [provisioner\_vm\_type](#input\_provisioner\_vm\_type) | OPTIONAL: Azure VM size for the provisioner instance (used during deploy operations). Defaults to the provider's built-in default. | `string` | `null` | no |
-| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Seed name for this deployment's Azure resource group -- NOT the literal name. An immutable random suffix is always appended (e.g. `myrg-h12g9v-rg`) so every deployment gets its own dedicated resource group. **Never point two Qumulo clusters (or any other VM) at the same resource group** -- Azure floating IPs are attached as secondary IP configurations on node NICs, and the floating-IP reconciler strips secondary IPs from any NIC in the resource group it doesn't recognize as its own, with no cluster filter. Sharing a resource group causes clusters to fight over floating IPs indefinitely. | `string` | n/a | yes |
+| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Seed name for this deployment's Azure resource group -- NOT the literal name. An immutable random suffix is always appended (e.g. `myrg-h12g9v-rg`, or see `resource_group_name_suffix` to customize the trailing `-rg` label) so every deployment gets its own dedicated resource group. **Never point two Qumulo clusters (or any other VM) at the same resource group** -- Azure floating IPs are attached as secondary IP configurations on node NICs, and the floating-IP reconciler strips secondary IPs from any NIC in the resource group it doesn't recognize as its own, with no cluster filter. Sharing a resource group causes clusters to fight over floating IPs indefinitely. | `string` | n/a | yes |
+| <a name="input_resource_group_name_suffix"></a> [resource\_group\_name\_suffix](#input\_resource\_group\_name\_suffix) | OPTIONAL: Trailing label appended after the random uniqueness suffix in the resource group name (default `-rg`, e.g. `myrg-h12g9v-rg`). Purely cosmetic -- freeform, e.g. `-westus2` for a region-based convention, or `""` for none. Does **not** affect the uniqueness guarantee; the random suffix itself is always present regardless of this setting. | `string` | `"-rg"` | no |
 | <a name="input_soft_capacity_limit_tb"></a> [soft\_capacity\_limit\_tb](#input\_soft\_capacity\_limit\_tb) | OPTIONAL: Soft capacity limit in TB (50 to 10000). Default is 500TB. Can be increased to add storage, but cannot be decreased. It's like a quota, unused capacity is not billed. | `number` | `500` | no |
 | <a name="input_ssh_public_key_path"></a> [ssh\_public\_key\_path](#input\_ssh\_public\_key\_path) | OPTIONAL: Path to a local SSH public key file for SSH access to cluster nodes, e.g. `"~/.ssh/id_rsa.pub"`. The file's contents are read and passed to the provider; `~` is expanded to the home directory. Do not set this to the key content itself. | `string` | `null` | no |
 | <a name="input_storage_class"></a> [storage\_class](#input\_storage\_class) | OPTIONAL: Storage backing the cluster's persistent data. HOT supports STANDARD and INTELLIGENT\_TIERING. Defaults to the provider's built-in default for the chosen cluster\_product\_type. | `string` | `null` | no |
