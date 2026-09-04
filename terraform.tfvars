@@ -121,6 +121,9 @@ provisioner_hooks_files = {
 # networking_mode                         - (OPTIONAL) Network management mode for cluster nodes ("host_managed" default or "qumulo_managed").
 # nsg_allow_ingress_icmp                  - (OPTIONAL) Enable ICMP ingress in the NSG rules the provider creates, for network diagnostics.
 # persistent_storage_resource_group       - (OPTIONAL) Resource group containing persistent storage accounts and Key Vault, if different from resource_group_name.
+# use_literal_resource_group_name         - (OPTIONAL, default false) Use resource_group_name EXACTLY as given (no random suffix): deploy into a
+#                                           pre-created resource group so RBAC grants and policy exemptions can exist before the first apply. The
+#                                           group must be dedicated to this one deployment.
 # resource_group_name_suffix              - (OPTIONAL) Trailing label after the random uniqueness suffix in the resource group name (default "-rg"). Purely
 #                                            cosmetic -- freeform, e.g. "-westus2" to match a region-based naming convention, or "" for none. Does NOT
 #                                            affect the uniqueness guarantee; the random suffix itself is always present regardless of this setting.

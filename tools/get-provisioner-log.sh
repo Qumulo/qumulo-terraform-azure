@@ -35,7 +35,7 @@ if [ -z "$RG" ]; then
   # a module version that predates that output.
   SUFFIX=$(terraform output -raw resource_group_name_suffix 2>/dev/null || echo "-rg")
   RG=$(terraform show -json | jq -r --arg suffix "$SUFFIX" '.values.root_module.resources[]?
-        | select(.address == "random_string.resource_group_suffix")
+        | select(.address | startswith("random_string.resource_group_suffix"))
         | "\(.values.keepers.resource_group_name)-\(.values.result)\($suffix)"')
 fi
 if [ -z "$RG" ]; then

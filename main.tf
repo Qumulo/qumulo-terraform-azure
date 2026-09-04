@@ -70,7 +70,13 @@ locals {
 #The trailing label after the random suffix (default "-rg") is purely cosmetic and IS customizable via
 #resource_group_name_suffix, e.g. for teams whose naming convention prefers a region code or nothing at
 #all -- see variables.tf. Changing it has no effect on the uniqueness guarantee above.
+#With use_literal_resource_group_name, no suffix resource exists: the caller
+#names the group exactly (typically pre-created, so RBAC and policy exemptions
+#can be granted before the first apply; the provider creates it if absent).
+#The dedicated-group contract above still applies -- one cluster per group.
 resource "random_string" "resource_group_suffix" {
+  count = var.use_literal_resource_group_name ? 0 : 1
+
   length  = 6
   lower   = true
   upper   = false
@@ -86,8 +92,13 @@ resource "random_string" "resource_group_suffix" {
   }
 }
 
+moved {
+  from = random_string.resource_group_suffix
+  to   = random_string.resource_group_suffix[0]
+}
+
 locals {
-  resource_group_unique_name = "${var.resource_group_name}-${random_string.resource_group_suffix.result}${var.resource_group_name_suffix}"
+  resource_group_unique_name = var.use_literal_resource_group_name ? var.resource_group_name : "${var.resource_group_name}-${random_string.resource_group_suffix[0].result}${var.resource_group_name_suffix}"
 }
 
 #This resource reads an Azure Key Vault secret if a secret resource ID is provided, or accepts a text based admin password.  One or the other must be provided.

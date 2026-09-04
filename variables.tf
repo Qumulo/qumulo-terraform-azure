@@ -391,6 +391,13 @@ variable "resource_group_name" {
   nullable    = false
 }
 
+variable "use_literal_resource_group_name" {
+  description = "OPTIONAL: Use resource_group_name exactly as given -- no random suffix, no trailing label. For deploying into a pre-created resource group so RBAC grants and policy exemptions can exist before the first apply (the provider creates the group if it is absent). The group must be dedicated to this one deployment, and the operator needs Owner (or Contributor plus User Access Administrator) on it. Changing this on an existing deployment renames the resource group and forces full cluster replacement."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
 variable "resource_group_name_suffix" {
   description = "OPTIONAL: Trailing label appended after the random uniqueness suffix in the auto-generated resource group name (default \"-rg\", e.g. \"myrg-h12g9v-rg\"). Purely cosmetic -- freeform, set to whatever matches your naming convention (e.g. \"-westus2\", or \"\" for none). Does NOT affect the uniqueness guarantee: the random suffix between resource_group_name and this label is always present and is not customizable, since it's the mechanism that keeps every deployment's resource group dedicated (see main.tf)."
   type        = string

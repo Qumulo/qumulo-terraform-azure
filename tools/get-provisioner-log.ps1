@@ -42,7 +42,7 @@ if (-not $rg) {
     $suffixLabel = terraform output -raw resource_group_name_suffix 2>$null
     if (-not $suffixLabel) { $suffixLabel = "-rg" }
     $state = terraform show -json | ConvertFrom-Json
-    $suffix = $state.values.root_module.resources | Where-Object address -eq "random_string.resource_group_suffix"
+    $suffix = $state.values.root_module.resources | Where-Object { $_.address -like "random_string.resource_group_suffix*" }
     if ($suffix) {
         $rg = "$($suffix.values.keepers.resource_group_name)-$($suffix.values.result)$suffixLabel"
     }
