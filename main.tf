@@ -159,4 +159,11 @@ resource "qumulo_filesystem_azure" "cluster" {
     delete = "${tostring(coalesce(var.provider_delete_timeout_minutes, var.provider_timeout_minutes))}m"
     update = "${tostring(coalesce(var.provider_update_timeout_minutes, var.provider_timeout_minutes))}m"
   }
+
+  lifecycle {
+    precondition {
+      condition     = local.cluster_version_has_scoped_reconcile || length(local.vulnerable_rg_nics) == 0
+      error_message = "Refusing to deploy: resource group ${local.resource_group_unique_name} contains VM NICs with secondary IP addresses that this cluster's floating-IP reconcile would strip (QSTON-1676): ${join(", ", local.vulnerable_rg_nics)}. Set cluster_version above ${local.fip_scoped_reconcile_version} (whose reconcile only touches NICs tagged for its own deployment), move those VMs out of the resource group, or use a dedicated resource group. See resource-group-check.tf."
+    }
+  }
 }
