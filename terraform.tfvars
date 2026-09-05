@@ -2,12 +2,8 @@
 # *********** Azure Variables ***********
 # deployment_name               - A name for this deployment, lowercase letters, digits, and interior hyphens, 2-15 characters.
 # location                      - Azure region for deployment.
-# resource_group_name           - Seed name for this deployment's Azure resource group -- NOT the literal name. An immutable random suffix is always
-#                                  appended (e.g. "rg-qumulo-h12g9v-rg") so every deployment gets its own dedicated resource group. WARNING: never
-#                                  point two Qumulo clusters (or any other VM) at the same resource group -- Azure floating IPs are attached as
-#                                  secondary IP configurations on node NICs, and the floating-IP reconciler strips secondary IPs from any NIC in the
-#                                  resource group it doesn't recognize as its own, with no cluster filter. Sharing a resource group causes clusters to
-#                                  fight over floating IPs indefinitely -- this has been observed firsthand as one cluster stealing another's IPs on boot.
+# resource_group_name           - Name of this deployment's Azure resource group, used exactly as given (pre-create it, or the provider creates it).
+#                                 Dedicated to this ONE deployment: no other clusters or VMs with secondary IPs in it.
 # subnet_id                     - Full Azure resource ID of the pre-configured subnet for cluster nodes. Must have the Microsoft.KeyVault and Microsoft.Storage service endpoints enabled.
 # vm_type                       - Azure VM size for cluster nodes. Only L-series storage-optimized VMs are supported (e.g. Standard_L8s_v4).
 # azure_subscription_id         - Azure subscription ID. The qumulo provider only falls back to the ARM_SUBSCRIPTION_ID environment variable, not the
@@ -121,9 +117,6 @@ provisioner_hooks_files = {
 # networking_mode                         - (OPTIONAL) Network management mode for cluster nodes ("host_managed" default or "qumulo_managed").
 # nsg_allow_ingress_icmp                  - (OPTIONAL) Enable ICMP ingress in the NSG rules the provider creates, for network diagnostics.
 # persistent_storage_resource_group       - (OPTIONAL) Resource group containing persistent storage accounts and Key Vault, if different from resource_group_name.
-# resource_group_name_suffix              - (OPTIONAL) Trailing label after the random uniqueness suffix in the resource group name (default "-rg"). Purely
-#                                            cosmetic -- freeform, e.g. "-westus2" to match a region-based naming convention, or "" for none. Does NOT
-#                                            affect the uniqueness guarantee; the random suffix itself is always present regardless of this setting.
 # private_link_appconfig_dns_zone_id      - (OPTIONAL) Resource ID of the privatelink.azconfig.io private DNS zone.
 # private_link_keyvault_dns_zone_id       - (OPTIONAL) Resource ID of the privatelink.vaultcore.azure.net private DNS zone.
 # marketplace_image / provisioner_marketplace_image - (OPTIONAL) Azure Marketplace image specs. Defaults to Ubuntu if unset. See examples/azure-rhel.tf for a populated RHEL 8/9 example, e.g.:
@@ -136,7 +129,6 @@ disable_keyvault_public_network_access  = false
 networking_mode                         = null
 nsg_allow_ingress_icmp                  = false
 persistent_storage_resource_group       = null
-resource_group_name_suffix              = "-rg"
 private_link_appconfig_dns_zone_id      = null
 private_link_keyvault_dns_zone_id       = null
 marketplace_image                       = null

@@ -56,38 +56,14 @@ locals {
   provisioner_hooks_files_safe = var.provisioner_hooks_files == null ? { pre_run_file = null, post_run_file = null, override_file = null } : var.provisioner_hooks_files
 }
 
-#Each Qumulo cluster MUST have its own dedicated Azure resource group. Azure floating IPs are attached as
-#secondary IP configurations on node NICs, and Qumulo's floating-IP reconciler for Terraform-deployed
-#("customer-managed") clusters scopes by the ENTIRE resource group, not by cluster: on every reconcile
-#cycle, each cluster's leader enumerates every VM/NIC in the resource group and strips secondary IP
-#configurations from any NIC it doesn't recognize as one of its own nodes. If two clusters (or any other
-#VM that happens to carry a secondary IP) share a resource group, they will fight over floating IPs
-#indefinitely -- this has been observed firsthand as one cluster stealing another's floating IPs on boot.
-#To make this impossible to hit by accident, resource_group_name is treated as a seed: an immutable random
-#suffix is appended below to guarantee every deployment gets its own resource group, the same way
-#deployment_name becomes deployment_unique_name. THIS RANDOM SUFFIX IS NOT OPTIONAL -- there is no
-#supported way to disable it, and do not attempt to force two deployments to share a resource group.
-#The trailing label after the random suffix (default "-rg") is purely cosmetic and IS customizable via
-#resource_group_name_suffix, e.g. for teams whose naming convention prefers a region code or nothing at
-#all -- see variables.tf. Changing it has no effect on the uniqueness guarantee above.
-resource "random_string" "resource_group_suffix" {
-  length  = 6
-  lower   = true
-  upper   = false
-  numeric = true
-  special = false
-
-  keepers = {
-    resource_group_name = var.resource_group_name
-  }
-
-  lifecycle {
-    ignore_changes = all
-  }
-}
-
+#Each Qumulo cluster MUST have its own dedicated Azure resource group -- one cluster per group,
+#and nothing else in it that carries secondary IP configurations. resource_group_name is used
+#exactly as given: pre-create the group (so RBAC grants and policy exemptions can exist before
+#the first apply) or let the provider create it. Qumulo Core's floating-IP reconciler operates
+#on the NICs in this group; current releases touch only addresses the cluster owns, but older
+#releases strip secondary IPs from every NIC in the group they do not recognize.
 locals {
-  resource_group_unique_name = "${var.resource_group_name}-${random_string.resource_group_suffix.result}${var.resource_group_name_suffix}"
+  resource_group_unique_name = var.resource_group_name
 }
 
 #This resource reads an Azure Key Vault secret if a secret resource ID is provided, or accepts a text based admin password.  One or the other must be provided.

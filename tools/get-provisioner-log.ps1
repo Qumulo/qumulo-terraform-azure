@@ -20,6 +20,8 @@
 #     from anywhere: when the working directory holds no Terraform workspace,
 #     the script changes to its own parent directory.
 
+param([string]$ResourceGroup)
+
 $ErrorActionPreference = "Stop"
 
 if (-not (Test-Path ".terraform") -and -not (Test-Path "terraform.tfstate")) {
@@ -31,24 +33,13 @@ if (-not $ctx -or -not $ctx.Subscription) {
     throw "No Azure subscription context. Run Connect-AzAccount first (add -UseDeviceAuthentication on a browserless host; Set-AzContext -Subscription <id> if you have several), then re-run this script."
 }
 
-$rg = terraform output -raw resource_group_unique_name 2>$null
+# The resource group name is the resource_group_name input, used verbatim.
+# The output covers the normal case; a failed first apply may have recorded
+# no outputs, so accept the name as a parameter for that case.
+$rg = $ResourceGroup
+if (-not $rg) { $rg = terraform output -raw resource_group_unique_name 2>$null }
 if (-not $rg) {
-    # No outputs recorded (e.g. apply failed very early): derive the resource
-    # group from the random suffix resource, which is created first. The
-    # trailing label comes from the resource_group_name_suffix output so a
-    # customized suffix (e.g. "-westus2" instead of the "-rg" default) is
-    # still recovered correctly; falls back to the literal "-rg" default only
-    # against a module version that predates that output.
-    $suffixLabel = terraform output -raw resource_group_name_suffix 2>$null
-    if (-not $suffixLabel) { $suffixLabel = "-rg" }
-    $state = terraform show -json | ConvertFrom-Json
-    $suffix = $state.values.root_module.resources | Where-Object address -eq "random_string.resource_group_suffix"
-    if ($suffix) {
-        $rg = "$($suffix.values.keepers.resource_group_name)-$($suffix.values.result)$suffixLabel"
-    }
-}
-if (-not $rg) {
-    throw "No deployment found in Terraform state (was anything applied from this directory?)"
+    throw "No resource group recorded in Terraform outputs (the apply may have failed early). Pass your resource_group_name value: .\tools\get-provisioner-log.ps1 -ResourceGroup <name>"
 }
 
 $workspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $rg |
