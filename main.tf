@@ -58,12 +58,31 @@ locals {
 
 #resource_group_name is used exactly as given. Both paths work: let the provider create the
 #group, or pre-create it (with key_vault_id and other BYO resources) so RBAC grants and policy
-#exemptions can exist before the first apply. On Qumulo Core versions below 7.10.1 the group
-#must be dedicated to one cluster: the floating-IP reconciler on those versions strips
-#secondary IPs from every NIC in the group it does not recognize. 7.10.1 and later touch only
-#addresses the cluster owns, so sharing the group is safe.
+#exemptions can exist before the first apply. Do not share the group with any other VMs. On
+#Qumulo Core versions below 7.10.1 that is a hard requirement: the floating-IP reconciler on
+#those versions strips secondary IPs from every NIC in the group it does not recognize.
+#7.10.1 and later touch only addresses the cluster owns.
 locals {
   resource_group_unique_name = var.resource_group_name
+
+  # Sort keys make the version comparison in the check below lexicographic-safe (7.9 < 7.10).
+  # The resource's cluster_version is the resolved version, covering the auto-selected-latest
+  # case: the provider resolves it during plan, so the warning appears at plan time; if it
+  # were ever unknown at plan, Terraform evaluates the check at the end of apply instead.
+  # An unparseable version (dev builds) skips the warning via the null key.
+  fip_reconciler_scoped_version = "7.10.1"
+  fip_min_version_key           = join(".", formatlist("%05d", split(".", local.fip_reconciler_scoped_version)))
+  cluster_version_key           = try(join(".", formatlist("%05d", slice(split(".", qumulo_filesystem_azure.cluster.cluster_version), 0, 3))), null)
+}
+
+check "floating_ip_reconciler_scope" {
+  assert {
+    condition = (
+      local.cluster_version_key == null ||
+      sort([local.cluster_version_key, local.fip_min_version_key])[0] == local.fip_min_version_key
+    )
+    error_message = "Qumulo Core ${qumulo_filesystem_azure.cluster.cluster_version} is below ${local.fip_reconciler_scoped_version}. On these versions the floating-IP reconciler strips secondary IP configurations from every NIC in resource group '${var.resource_group_name}' that it does not recognize as a cluster node. Keep this resource group dedicated to this deployment: no other clusters and no other VMs."
+  }
 }
 
 #This resource reads an Azure Key Vault secret if a secret resource ID is provided, or accepts a text based admin password.  One or the other must be provided.

@@ -4,8 +4,8 @@
 # location                      - Azure region for deployment.
 # resource_group_name           - Name of this deployment's Azure resource group, used exactly as given. Either let the provider create it, or
 #                                 pre-create it (along with resources like the Key Vault, see key_vault_id) when RBAC grants or policy exemptions
-#                                 must exist before the first apply. On Qumulo Core versions below 7.10.1 only, the group must be dedicated to
-#                                 this ONE deployment: no other clusters or VMs with secondary IPs in it.
+#                                 must exist before the first apply. Do not share the group with any other VMs. On Qumulo Core versions below
+#                                 7.10.1 this is a hard requirement (a plan/apply warning reports it): no other clusters or VMs in the group.
 # subnet_id                     - Full Azure resource ID of the pre-configured subnet for cluster nodes. Must have the Microsoft.KeyVault and Microsoft.Storage service endpoints enabled.
 # vm_type                       - Azure VM size for cluster nodes. Only L-series storage-optimized VMs are supported (e.g. Standard_L8s_v4).
 # azure_subscription_id         - Azure subscription ID. The qumulo provider only falls back to the ARM_SUBSCRIPTION_ID environment variable, not the

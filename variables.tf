@@ -386,7 +386,7 @@ variable "provisioner_vm_type" {
 }
 
 variable "resource_group_name" {
-  description = "Name of this deployment's Azure resource group, used exactly as given. The provider creates the group if it does not exist. Alternatively, pre-create the group -- and resources for the deployment such as the Key Vault (see key_vault_id) -- when RBAC grants or policy exemptions must be in place before the first apply. On Qumulo Core versions below 7.10.1 the group must be dedicated to this one deployment: the floating-IP reconciler on those versions strips secondary IPs from every NIC in the group it does not recognize, so never point two clusters at the same group or place other VMs with secondary IP configurations in it. Versions 7.10.1 and later touch only addresses the cluster owns, so this restriction does not apply."
+  description = "Name of this deployment's Azure resource group, used exactly as given. The provider creates the group if it does not exist. Alternatively, pre-create the group -- and resources for the deployment such as the Key Vault (see key_vault_id) -- when RBAC grants or policy exemptions must be in place before the first apply. Do not share the group with any other VMs. On Qumulo Core versions below 7.10.1 that is a hard requirement: the floating-IP reconciler on those versions strips secondary IPs from every NIC in the group it does not recognize, so a shared group loses addresses to the cluster. A plan-time warning reports this whenever the version to be installed -- explicit cluster_version or auto-selected latest -- is below 7.10.1. Versions 7.10.1 and later touch only addresses the cluster owns."
   type        = string
   nullable    = false
 
