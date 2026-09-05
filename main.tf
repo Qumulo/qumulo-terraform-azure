@@ -56,12 +56,12 @@ locals {
   provisioner_hooks_files_safe = var.provisioner_hooks_files == null ? { pre_run_file = null, post_run_file = null, override_file = null } : var.provisioner_hooks_files
 }
 
-#Each Qumulo cluster MUST have its own dedicated Azure resource group -- one cluster per group,
-#and nothing else in it that carries secondary IP configurations. resource_group_name is used
-#exactly as given: pre-create the group (so RBAC grants and policy exemptions can exist before
-#the first apply) or let the provider create it. Qumulo Core's floating-IP reconciler operates
-#on the NICs in this group; current releases touch only addresses the cluster owns, but older
-#releases strip secondary IPs from every NIC in the group they do not recognize.
+#resource_group_name is used exactly as given. Both paths work: let the provider create the
+#group, or pre-create it (with key_vault_id and other BYO resources) so RBAC grants and policy
+#exemptions can exist before the first apply. On Qumulo Core versions below 7.10.1 the group
+#must be dedicated to one cluster: the floating-IP reconciler on those versions strips
+#secondary IPs from every NIC in the group it does not recognize. 7.10.1 and later touch only
+#addresses the cluster owns, so sharing the group is safe.
 locals {
   resource_group_unique_name = var.resource_group_name
 }

@@ -2,8 +2,10 @@
 # *********** Azure Variables ***********
 # deployment_name               - A name for this deployment, lowercase letters, digits, and interior hyphens, 2-15 characters.
 # location                      - Azure region for deployment.
-# resource_group_name           - Name of this deployment's Azure resource group, used exactly as given (pre-create it, or the provider creates it).
-#                                 Dedicated to this ONE deployment: no other clusters or VMs with secondary IPs in it.
+# resource_group_name           - Name of this deployment's Azure resource group, used exactly as given. Either let the provider create it, or
+#                                 pre-create it (along with resources like the Key Vault, see key_vault_id) when RBAC grants or policy exemptions
+#                                 must exist before the first apply. On Qumulo Core versions below 7.10.1 only, the group must be dedicated to
+#                                 this ONE deployment: no other clusters or VMs with secondary IPs in it.
 # subnet_id                     - Full Azure resource ID of the pre-configured subnet for cluster nodes. Must have the Microsoft.KeyVault and Microsoft.Storage service endpoints enabled.
 # vm_type                       - Azure VM size for cluster nodes. Only L-series storage-optimized VMs are supported (e.g. Standard_L8s_v4).
 # azure_subscription_id         - Azure subscription ID. The qumulo provider only falls back to the ARM_SUBSCRIPTION_ID environment variable, not the

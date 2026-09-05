@@ -386,7 +386,7 @@ variable "provisioner_vm_type" {
 }
 
 variable "resource_group_name" {
-  description = "Name of this deployment's Azure resource group, used exactly as given. The provider creates the group if it does not exist; pre-create it when RBAC grants or policy exemptions must be in place before the first apply. The group must be dedicated to this one deployment: never point two clusters at the same group, and never place other VMs with secondary IP configurations in it (the floating-IP reconciler operates on the group's NICs)."
+  description = "Name of this deployment's Azure resource group, used exactly as given. The provider creates the group if it does not exist. Alternatively, pre-create the group -- and resources for the deployment such as the Key Vault (see key_vault_id) -- when RBAC grants or policy exemptions must be in place before the first apply. On Qumulo Core versions below 7.10.1 the group must be dedicated to this one deployment: the floating-IP reconciler on those versions strips secondary IPs from every NIC in the group it does not recognize, so never point two clusters at the same group or place other VMs with secondary IP configurations in it. Versions 7.10.1 and later touch only addresses the cluster owns, so this restriction does not apply."
   type        = string
   nullable    = false
 

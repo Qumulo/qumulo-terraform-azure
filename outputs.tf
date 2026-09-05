@@ -31,7 +31,7 @@ output "cluster_uuid" {
 }
 
 output "resource_group_unique_name" {
-  description = "The deployment's Azure resource group name (resource_group_name verbatim; retained under this name so existing tooling keeps working). Must never be shared between clusters -- see main.tf."
+  description = "The deployment's Azure resource group name (resource_group_name verbatim; retained under this name so existing tooling keeps working). On Qumulo Core versions below 7.10.1 this group must not be shared between clusters -- see main.tf."
   value       = local.resource_group_unique_name
 }
 
