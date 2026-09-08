@@ -2,7 +2,7 @@ version: ""
 
 formatter: markdown table
 
-name: azure-terraform-cnq
+name: qumulo-terraform-azure
 
 content: |-
 
