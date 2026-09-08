@@ -49,11 +49,28 @@ locals {
   allow_cidrs    = var.allow_cidrs == null ? data.azurerm_subnet.selected.address_prefixes : var.allow_cidrs
   ssh_public_key = var.ssh_public_key_path == null ? null : file(pathexpand(var.ssh_public_key_path))
 
-  # node_hooks_files/provisioner_hooks_files default to null as a whole object; fall back to an
-  # all-null object so main.tf can safely dereference .pre_run_file/.post_run_file/.override_file
-  # below even when the variable is omitted entirely.
-  node_hooks_files_safe        = var.node_hooks_files == null ? { pre_run_file = null, post_run_file = null, override_file = null } : var.node_hooks_files
-  provisioner_hooks_files_safe = var.provisioner_hooks_files == null ? { pre_run_file = null, post_run_file = null, override_file = null } : var.provisioner_hooks_files
+  # node_hooks_files/provisioner_hooks_files default to null as a whole object; normalize the
+  # single-file and list forms into one list per anchor, in inline order. Each entry's content
+  # gets a banner naming its file so the anchors in the rendered boot script stay navigable.
+  hooks_files_none             = { pre_run_file = null, pre_run_files = null, post_run_file = null, post_run_files = null, override_file = null }
+  node_hooks_files_safe        = var.node_hooks_files == null ? local.hooks_files_none : var.node_hooks_files
+  provisioner_hooks_files_safe = var.provisioner_hooks_files == null ? local.hooks_files_none : var.provisioner_hooks_files
+
+  node_pre_run_hook_files         = local.node_hooks_files_safe.pre_run_files != null ? local.node_hooks_files_safe.pre_run_files : (local.node_hooks_files_safe.pre_run_file == null ? [] : [local.node_hooks_files_safe.pre_run_file])
+  node_post_run_hook_files        = local.node_hooks_files_safe.post_run_files != null ? local.node_hooks_files_safe.post_run_files : (local.node_hooks_files_safe.post_run_file == null ? [] : [local.node_hooks_files_safe.post_run_file])
+  provisioner_pre_run_hook_files  = local.provisioner_hooks_files_safe.pre_run_files != null ? local.provisioner_hooks_files_safe.pre_run_files : (local.provisioner_hooks_files_safe.pre_run_file == null ? [] : [local.provisioner_hooks_files_safe.pre_run_file])
+  provisioner_post_run_hook_files = local.provisioner_hooks_files_safe.post_run_files != null ? local.provisioner_hooks_files_safe.post_run_files : (local.provisioner_hooks_files_safe.post_run_file == null ? [] : [local.provisioner_hooks_files_safe.post_run_file])
+
+  node_pre_run_hook_content         = length(local.node_pre_run_hook_files) == 0 ? null : join("\n", [for f in local.node_pre_run_hook_files : "# --- hooks/${f} ---\n${file("${path.module}/hooks/${f}")}"])
+  node_post_run_hook_content        = length(local.node_post_run_hook_files) == 0 ? null : join("\n", [for f in local.node_post_run_hook_files : "# --- hooks/${f} ---\n${file("${path.module}/hooks/${f}")}"])
+  provisioner_pre_run_hook_content  = length(local.provisioner_pre_run_hook_files) == 0 ? null : join("\n", [for f in local.provisioner_pre_run_hook_files : "# --- hooks/${f} ---\n${file("${path.module}/hooks/${f}")}"])
+  provisioner_post_run_hook_content = length(local.provisioner_post_run_hook_files) == 0 ? null : join("\n", [for f in local.provisioner_post_run_hook_files : "# --- hooks/${f} ---\n${file("${path.module}/hooks/${f}")}"])
+
+  #Console log tag of each wired hook (hooks/readme.md, "Hook contract"), for hooks-watch.tf.
+  hook_watch_tags = distinct([
+    for f in concat(local.node_pre_run_hook_files, local.node_post_run_hook_files, local.provisioner_pre_run_hook_files, local.provisioner_post_run_hook_files) :
+    replace(trimsuffix(basename(f), ".sh"), "-", "_")
+  ])
 }
 
 #resource_group_name is used exactly as given. Both paths work: let the provider create the
@@ -139,13 +156,13 @@ resource "qumulo_filesystem_azure" "cluster" {
   vm_type                                 = var.vm_type
 
   node_hooks = {
-    pre_run  = local.node_hooks_files_safe.pre_run_file == null ? null : file("${path.module}/hooks/${local.node_hooks_files_safe.pre_run_file}")
-    post_run = local.node_hooks_files_safe.post_run_file == null ? null : file("${path.module}/hooks/${local.node_hooks_files_safe.post_run_file}")
+    pre_run  = local.node_pre_run_hook_content
+    post_run = local.node_post_run_hook_content
     override = local.node_hooks_files_safe.override_file == null ? null : file("${path.module}/hooks/${local.node_hooks_files_safe.override_file}")
   }
   provisioner_hooks = {
-    pre_run  = local.provisioner_hooks_files_safe.pre_run_file == null ? null : file("${path.module}/hooks/${local.provisioner_hooks_files_safe.pre_run_file}")
-    post_run = local.provisioner_hooks_files_safe.post_run_file == null ? null : file("${path.module}/hooks/${local.provisioner_hooks_files_safe.post_run_file}")
+    pre_run  = local.provisioner_pre_run_hook_content
+    post_run = local.provisioner_post_run_hook_content
     override = local.provisioner_hooks_files_safe.override_file == null ? null : file("${path.module}/hooks/${local.provisioner_hooks_files_safe.override_file}")
   }
 
@@ -153,5 +170,21 @@ resource "qumulo_filesystem_azure" "cluster" {
     create = "${tostring(coalesce(var.provider_create_timeout_minutes, var.provider_timeout_minutes))}m"
     delete = "${tostring(coalesce(var.provider_delete_timeout_minutes, var.provider_timeout_minutes))}m"
     update = "${tostring(coalesce(var.provider_update_timeout_minutes, var.provider_timeout_minutes))}m"
+  }
+
+  lifecycle {
+    #Chained hooks are inlined into ONE bash boot script per role: every pre/post hook
+    #must be a bash fragment that stays valid when merged (see hooks/readme.md, and
+    #tools/validate-hooks.sh for a merged syntax check). A shebang marks a standalone
+    #script in some other dialect, which cannot be spliced mid-file.
+    precondition {
+      condition = alltrue([
+        for f in concat(
+          local.node_pre_run_hook_files, local.node_post_run_hook_files,
+          local.provisioner_pre_run_hook_files, local.provisioner_post_run_hook_files,
+        ) : endswith(f, ".sh") && !startswith(file("${path.module}/hooks/${f}"), "#!")
+      ])
+      error_message = "Every chained pre_run/post_run hook must be a .sh bash fragment without a shebang line: hooks are concatenated into a single bash boot script and must be valid when merged (hooks/readme.md documents the contract; override_file is exempt). Check the merge with tools/validate-hooks.sh."
+    }
   }
 }

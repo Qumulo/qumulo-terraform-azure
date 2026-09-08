@@ -194,6 +194,12 @@ variable "floating_ip_count" {
   }
 }
 
+variable "hooks_apply_watch" {
+  description = "OPTIONAL: While a hook is wired, tail the VMs' boot-diagnostics serial logs during `terraform apply` and print the hooks' \"[<hook_name>] ...\" lines into the apply output (needs the az CLI; see hooks-watch.tf). Set false to opt out."
+  type        = bool
+  default     = true
+}
+
 variable "key_vault_id" {
   description = "OPTIONAL: Full Azure resource ID of a customer-managed Key Vault. If omitted, the provider creates one."
   type        = string
@@ -271,12 +277,22 @@ variable "node_count" {
 }
 
 variable "node_hooks_files" {
-  description = "OPTIONAL: Advanced use only. Filenames (relative to the hooks/ directory) spliced into each node's boot script at pre_run_file (before first network operation) / post_run_file (after qumulo-core install) anchors. Runs only on first boot. override_file replaces the entire node boot script."
+  description = "OPTIONAL: Advanced use only. Filenames (relative to the hooks/ directory) spliced into each node's boot script at the pre-run (before first network operation) / post-run (after qumulo-core install) anchors. Runs only on first boot. Use pre_run_files / post_run_files to chain several hooks: their contents are inlined in list order into the single anchor. pre_run_file / post_run_file remain as the single-file forms. override_file replaces the entire node boot script."
   type = object({
-    pre_run_file  = optional(string)
-    post_run_file = optional(string)
-    override_file = optional(string)
+    pre_run_file   = optional(string)
+    pre_run_files  = optional(list(string))
+    post_run_file  = optional(string)
+    post_run_files = optional(list(string))
+    override_file  = optional(string)
   })
+
+  validation {
+    condition = var.node_hooks_files == null || (
+      !(var.node_hooks_files.pre_run_file != null && var.node_hooks_files.pre_run_files != null) &&
+      !(var.node_hooks_files.post_run_file != null && var.node_hooks_files.post_run_files != null)
+    )
+    error_message = "Set pre_run_file or pre_run_files, not both (and likewise for post_run); the plural form is the singular's list equivalent."
+  }
   default  = null
   nullable = true
 }
@@ -349,12 +365,22 @@ variable "provisioner_custom_image_id" {
 }
 
 variable "provisioner_hooks_files" {
-  description = "OPTIONAL: Advanced use only. Filenames (relative to the hooks/ directory) spliced into the provisioner's boot script at pre_run_file (after deployment variables are set) / post_run_file (after the cluster is formed and configured) anchors. override_file replaces the entire provisioner boot script."
+  description = "OPTIONAL: Advanced use only. Filenames (relative to the hooks/ directory) spliced into the provisioner's boot script at pre_run_file (after deployment variables are set) / post_run_file (after the cluster is formed and configured) anchors. override_file replaces the entire provisioner boot script. Use pre_run_files / post_run_files to chain several hooks: their contents are inlined in list order into the single anchor."
   type = object({
-    pre_run_file  = optional(string)
-    post_run_file = optional(string)
-    override_file = optional(string)
+    pre_run_file   = optional(string)
+    pre_run_files  = optional(list(string))
+    post_run_file  = optional(string)
+    post_run_files = optional(list(string))
+    override_file  = optional(string)
   })
+
+  validation {
+    condition = var.provisioner_hooks_files == null || (
+      !(var.provisioner_hooks_files.pre_run_file != null && var.provisioner_hooks_files.pre_run_files != null) &&
+      !(var.provisioner_hooks_files.post_run_file != null && var.provisioner_hooks_files.post_run_files != null)
+    )
+    error_message = "Set pre_run_file or pre_run_files, not both (and likewise for post_run); the plural form is the singular's list equivalent."
+  }
   default  = null
   nullable = true
 }
