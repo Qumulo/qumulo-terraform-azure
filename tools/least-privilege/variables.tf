@@ -1,3 +1,21 @@
+variable "admin_password_key_vault_id" {
+  description = "OPTIONAL: Resource ID of the Key Vault holding the cluster admin password, needed only when admin_pwd_or_keyvault_secret_id is a secret URI (https://<vault>.vault.azure.net/secrets/...), which does not name the vault's resource group. The resource-ID form of the secret needs no help."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.admin_password_key_vault_id != null || var.admin_pwd_or_keyvault_secret_id == null || !startswith(var.admin_pwd_or_keyvault_secret_id, "https://")
+    error_message = "admin_pwd_or_keyvault_secret_id is a Key Vault secret URI, which does not carry the vault's resource group. Set admin_password_key_vault_id to that vault's resource ID so the deployer can be granted read access to the secret."
+  }
+}
+
+variable "admin_pwd_or_keyvault_secret_id" {
+  description = "OPTIONAL: The wrapper's admin_pwd_or_keyvault_secret_id. When it references a Key Vault secret, the deployer is granted read access to it (Key Vault Secrets User on the secret, or a Get access policy on a vault that uses access policies). A plaintext password grants nothing and is not used."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
 variable "azure_subscription_id" {
   description = "Subscription the deployment lands in."
   type        = string
@@ -63,6 +81,18 @@ variable "deletion_protection" {
 
 variable "key_vault_id" {
   description = "OPTIONAL: Resource ID of a customer-managed Key Vault (the wrapper's key_vault_id). Key Vault grants are scoped to it instead of the deployment resource group."
+  type        = string
+  default     = null
+}
+
+variable "custom_image_id" {
+  description = "OPTIONAL: Custom VM image resource ID for cluster nodes (the wrapper's custom_image_id). The deployer is granted Reader on the image (for a Compute Gallery image, on the whole gallery) so VMs can be created from it and from later images in the same gallery."
+  type        = string
+  default     = null
+}
+
+variable "provisioner_custom_image_id" {
+  description = "OPTIONAL: Custom VM image resource ID for the provisioner (the wrapper's provisioner_custom_image_id). Same grant as custom_image_id."
   type        = string
   default     = null
 }

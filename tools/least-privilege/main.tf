@@ -17,6 +17,31 @@ locals {
 
   key_vault_scope = coalesce(var.key_vault_id, local.resource_group_id)
 
+  #A vault is granted by role assignments when it uses the RBAC permission model and by
+  #access policies otherwise. The provider's own vault is always RBAC.
+  key_vault_id_pattern = "^/subscriptions/[^/]+/resourceGroups/(?P<resource_group>[^/]+)/providers/Microsoft\\.KeyVault/vaults/(?P<name>[^/]+)$"
+
+  customer_key_vault_parts = var.key_vault_id == null ? null : regex(local.key_vault_id_pattern, var.key_vault_id)
+  customer_key_vault_rbac  = var.key_vault_id == null ? true : data.azurerm_key_vault.customer[0].rbac_authorization_enabled
+
+  #The admin password reference is sensitive as a whole (it may be the password itself); only a
+  #Key Vault secret resource ID is extracted from it, and that is not secret.
+  admin_secret_id = var.admin_pwd_or_keyvault_secret_id == null ? null : nonsensitive(try(
+    regex("^/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft\\.KeyVault/vaults/[^/]+/secrets/[^/]+$", var.admin_pwd_or_keyvault_secret_id),
+    null,
+  ))
+  admin_password_vault_id    = var.admin_password_key_vault_id != null ? var.admin_password_key_vault_id : (local.admin_secret_id == null ? null : regex("^(.*)/secrets/[^/]+$", local.admin_secret_id)[0])
+  admin_password_vault_parts = local.admin_password_vault_id == null ? null : regex(local.key_vault_id_pattern, local.admin_password_vault_id)
+  admin_password_vault_rbac  = local.admin_password_vault_id == null ? true : data.azurerm_key_vault.admin_password[0].rbac_authorization_enabled
+  #The read grant lands on the secret itself when the reference names it, else on the vault.
+  admin_password_read_scope = local.admin_password_vault_id == null ? null : coalesce(local.admin_secret_id, local.admin_password_vault_id)
+
+  #A gallery image is granted at its gallery, so a new image definition or version needs no new grant.
+  image_scopes = toset([
+    for id in compact([var.custom_image_id, var.provisioner_custom_image_id]) :
+    can(regex("/galleries/[^/]+/images/", id)) ? regex("^(.*/galleries/[^/]+)/images/", id)[0] : id
+  ])
+
   #The deployer defaults to a created identity; supplying deployer_principal_id overrides.
   create_deployer_identity = var.deployer_principal_id == null
 
@@ -136,6 +161,7 @@ resource "azurerm_role_definition" "deployer" {
         "Microsoft.Storage/storageAccounts/read",
         "Microsoft.Storage/storageAccounts/write",
         "Microsoft.Storage/storageAccounts/delete",
+        "Microsoft.Storage/storageAccounts/PrivateEndpointConnectionsApproval/action",
         "Microsoft.Storage/storageAccounts/listKeys/action",
         "Microsoft.Storage/storageAccounts/blobServices/containers/read",
         "Microsoft.Storage/storageAccounts/blobServices/containers/write",
@@ -144,9 +170,11 @@ resource "azurerm_role_definition" "deployer" {
         "Microsoft.KeyVault/vaults/read",
         "Microsoft.KeyVault/vaults/write",
         "Microsoft.KeyVault/vaults/delete",
+        "Microsoft.KeyVault/vaults/PrivateEndpointConnectionsApproval/action",
         "Microsoft.AppConfiguration/configurationStores/read",
         "Microsoft.AppConfiguration/configurationStores/write",
         "Microsoft.AppConfiguration/configurationStores/delete",
+        "Microsoft.AppConfiguration/configurationStores/PrivateEndpointConnectionsApproval/action",
         "Microsoft.AppConfiguration/configurationStores/keyValues/action",
         "Microsoft.AppConfiguration/configurationStores/keyValues/write",
         "Microsoft.AppConfiguration/configurationStores/keyValues/delete",
@@ -281,6 +309,7 @@ resource "azurerm_role_definition" "deployer_storage" {
         "Microsoft.Storage/storageAccounts/read",
         "Microsoft.Storage/storageAccounts/write",
         "Microsoft.Storage/storageAccounts/delete",
+        "Microsoft.Storage/storageAccounts/PrivateEndpointConnectionsApproval/action",
         "Microsoft.Storage/storageAccounts/listKeys/action",
         "Microsoft.Storage/storageAccounts/blobServices/containers/read",
         "Microsoft.Storage/storageAccounts/blobServices/containers/write",
@@ -288,6 +317,7 @@ resource "azurerm_role_definition" "deployer_storage" {
         "Microsoft.KeyVault/vaults/read",
         "Microsoft.KeyVault/vaults/write",
         "Microsoft.KeyVault/vaults/delete",
+        "Microsoft.KeyVault/vaults/PrivateEndpointConnectionsApproval/action",
       ],
       var.deletion_protection ? [
         "Microsoft.Authorization/locks/read",
@@ -369,11 +399,78 @@ resource "azurerm_role_assignment" "deployer_network" {
   skip_service_principal_aad_check = local.create_deployer_identity
 }
 
-resource "azurerm_role_assignment" "deployer_customer_key_vault" {
+data "azurerm_key_vault" "customer" {
   count = var.key_vault_id == null ? 0 : 1
+
+  name                = local.customer_key_vault_parts.name
+  resource_group_name = local.customer_key_vault_parts.resource_group
+}
+
+resource "azurerm_role_assignment" "deployer_customer_key_vault" {
+  count = var.key_vault_id != null && local.customer_key_vault_rbac ? 1 : 0
 
   scope                            = var.key_vault_id
   role_definition_name             = "Key Vault Administrator"
+  principal_id                     = local.deployer_principal_id
+  principal_type                   = local.deployer_principal_type
+  skip_service_principal_aad_check = local.create_deployer_identity
+}
+
+#Access-policy vault: the management-plane read the provider needs comes from Reader, the
+#data plane from the policy below.
+resource "azurerm_role_assignment" "deployer_customer_key_vault_reader" {
+  count = var.key_vault_id != null && !local.customer_key_vault_rbac ? 1 : 0
+
+  scope                            = var.key_vault_id
+  role_definition_name             = "Reader"
+  principal_id                     = local.deployer_principal_id
+  principal_type                   = local.deployer_principal_type
+  skip_service_principal_aad_check = local.create_deployer_identity
+}
+
+resource "azurerm_key_vault_access_policy" "deployer_customer_key_vault" {
+  count = var.key_vault_id != null && !local.customer_key_vault_rbac ? 1 : 0
+
+  key_vault_id = var.key_vault_id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = local.deployer_principal_id
+
+  secret_permissions  = ["Get", "List", "Set", "Delete"]
+  storage_permissions = ["Get", "List", "Set", "Delete", "GetSAS", "ListSAS", "SetSAS", "DeleteSAS"]
+}
+
+data "azurerm_key_vault" "admin_password" {
+  count = local.admin_password_vault_id == null ? 0 : 1
+
+  name                = local.admin_password_vault_parts.name
+  resource_group_name = local.admin_password_vault_parts.resource_group
+}
+
+resource "azurerm_role_assignment" "deployer_admin_password_secret" {
+  count = local.admin_password_vault_id != null && local.admin_password_vault_rbac ? 1 : 0
+
+  scope                            = local.admin_password_read_scope
+  role_definition_name             = "Key Vault Secrets User"
+  principal_id                     = local.deployer_principal_id
+  principal_type                   = local.deployer_principal_type
+  skip_service_principal_aad_check = local.create_deployer_identity
+}
+
+resource "azurerm_key_vault_access_policy" "deployer_admin_password_secret" {
+  count = local.admin_password_vault_id != null && !local.admin_password_vault_rbac ? 1 : 0
+
+  key_vault_id = local.admin_password_vault_id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = local.deployer_principal_id
+
+  secret_permissions = ["Get"]
+}
+
+resource "azurerm_role_assignment" "deployer_image_reader" {
+  for_each = local.image_scopes
+
+  scope                            = each.value
+  role_definition_name             = "Reader"
   principal_id                     = local.deployer_principal_id
   principal_type                   = local.deployer_principal_type
   skip_service_principal_aad_check = local.create_deployer_identity
@@ -446,10 +543,32 @@ resource "azurerm_role_assignment" "node_subnet_join" {
 }
 
 resource "azurerm_role_assignment" "node_key_vault_secrets" {
+  count = local.customer_key_vault_rbac ? 1 : 0
+
   scope                            = local.key_vault_scope
   role_definition_name             = "Key Vault Secrets User"
   principal_id                     = azurerm_user_assigned_identity.cluster_node.principal_id
   skip_service_principal_aad_check = true
+}
+
+moved {
+  from = azurerm_role_assignment.node_key_vault_secrets
+  to   = azurerm_role_assignment.node_key_vault_secrets[0]
+}
+
+moved {
+  from = azurerm_role_assignment.provisioner_key_vault_secrets
+  to   = azurerm_role_assignment.provisioner_key_vault_secrets[0]
+}
+
+resource "azurerm_key_vault_access_policy" "node_key_vault_secrets" {
+  count = local.customer_key_vault_rbac ? 0 : 1
+
+  key_vault_id = var.key_vault_id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = azurerm_user_assigned_identity.cluster_node.principal_id
+
+  secret_permissions = ["Get", "List"]
 }
 
 resource "azurerm_role_assignment" "node_blob_reader" {
@@ -478,8 +597,20 @@ resource "azurerm_role_assignment" "provisioner_reader" {
 }
 
 resource "azurerm_role_assignment" "provisioner_key_vault_secrets" {
+  count = local.customer_key_vault_rbac ? 1 : 0
+
   scope                            = local.key_vault_scope
   role_definition_name             = "Key Vault Secrets User"
   principal_id                     = azurerm_user_assigned_identity.provisioner.principal_id
   skip_service_principal_aad_check = true
+}
+
+resource "azurerm_key_vault_access_policy" "provisioner_key_vault_secrets" {
+  count = local.customer_key_vault_rbac ? 0 : 1
+
+  key_vault_id = var.key_vault_id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = azurerm_user_assigned_identity.provisioner.principal_id
+
+  secret_permissions = ["Get", "List"]
 }

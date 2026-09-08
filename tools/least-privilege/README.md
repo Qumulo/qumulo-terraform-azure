@@ -33,8 +33,10 @@ permission preflight. The `wrapper_tfvars` output lists exactly what to set.
 ## Usage
 
 The shared deployment values -- subscription, subnet, resource group, location,
-tags, `key_vault_id`, `deletion_protection`, `persistent_storage_resource_group`,
-and the `*_private_dns_zone_id` zones -- are inherited from the wrapper's
+tags, `key_vault_id`, `admin_pwd_or_keyvault_secret_id`, `deletion_protection`,
+`persistent_storage_resource_group`, `custom_image_id`,
+`provisioner_custom_image_id`, and the `*_private_dns_zone_id` zones -- are
+inherited from the wrapper's
 top-level `terraform.tfvars`: this module declares the same variable names, so
 one file supplies both configurations. Fill in this directory's
 `terraform.tfvars` with what the wrapper does not know (the deployer principal
@@ -101,6 +103,25 @@ requires the deployer to hold `Microsoft.Authorization/roleDefinitions` and
 `roleAssignments` write at subscription scope -- it is role administration by
 the deployment, not a least-privilege model, and this module does not support
 it. Always pass both identity outputs to the wrapper.
+
+## Key Vault grants
+
+Two vaults can come from outside the deployment, and both are read at plan
+time to pick the grant form their permission model needs:
+
+- `key_vault_id` (customer-managed cluster vault): RBAC model -- the deployer
+  gets Key Vault Administrator on the vault, the node and provisioner
+  identities Key Vault Secrets User on it. Access-policy model -- the deployer
+  gets Reader on the vault plus an access policy (secrets Get/List/Set/Delete,
+  storage Get/List/Set/Delete/GetSAS/ListSAS/SetSAS/DeleteSAS), the node and
+  provisioner identities a secrets Get/List policy.
+- The vault holding `admin_pwd_or_keyvault_secret_id` when that is a secret
+  reference: the deployer gets Key Vault Secrets User on the secret (RBAC) or a
+  secrets Get policy (access policies). The resource-ID form of the reference
+  names the vault; for the URI form set `admin_password_key_vault_id`.
+
+Both vaults must be in the deployment's subscription (the azurerm provider
+here is configured for that subscription only).
 
 ## Known limits
 

@@ -126,6 +126,7 @@ JSON tab**, paste, then Review + create. Replace `<subscription-id>` and
           "Microsoft.Storage/storageAccounts/read",
           "Microsoft.Storage/storageAccounts/write",
           "Microsoft.Storage/storageAccounts/delete",
+          "Microsoft.Storage/storageAccounts/PrivateEndpointConnectionsApproval/action",
           "Microsoft.Storage/storageAccounts/listKeys/action",
           "Microsoft.Storage/storageAccounts/blobServices/containers/read",
           "Microsoft.Storage/storageAccounts/blobServices/containers/write",
@@ -133,9 +134,11 @@ JSON tab**, paste, then Review + create. Replace `<subscription-id>` and
           "Microsoft.KeyVault/vaults/read",
           "Microsoft.KeyVault/vaults/write",
           "Microsoft.KeyVault/vaults/delete",
+          "Microsoft.KeyVault/vaults/PrivateEndpointConnectionsApproval/action",
           "Microsoft.AppConfiguration/configurationStores/read",
           "Microsoft.AppConfiguration/configurationStores/write",
           "Microsoft.AppConfiguration/configurationStores/delete",
+          "Microsoft.AppConfiguration/configurationStores/PrivateEndpointConnectionsApproval/action",
           "Microsoft.AppConfiguration/configurationStores/keyValues/action",
           "Microsoft.AppConfiguration/configurationStores/keyValues/write",
           "Microsoft.AppConfiguration/configurationStores/keyValues/delete",
@@ -198,7 +201,12 @@ Why each block:
   `applicationSecurityGroups/joinIpConfiguration/action`, and so on. Public IP
   rights cover deployments with public endpoints.
 - **Private endpoints and DNS zone groups.** Created when private-endpoint
-  options are enabled.
+  options are enabled. Creating a private endpoint also auto-approves its
+  connection on the target service, and Azure checks that as a linked
+  authorization on the target: without
+  `PrivateEndpointConnectionsApproval/action` on the storage account, vault, or
+  App Configuration store, the endpoint PUT fails with
+  `LinkedAuthorizationFailed` even though `privateEndpoints/write` is granted.
 - **Storage accounts, containers, listKeys.** The cluster's object storage.
   `listKeys` exists because the provider signs SAS definitions with an account
   key and stores them in Key Vault for the cluster's data path; the key itself
@@ -422,17 +430,34 @@ executor automatically; in the Portal, add yourself here.)
 
 ## Optional grants
 
-- **Customer-managed Key Vault** (`key_vault_id`): assign the deployer **Key
-  Vault Administrator** on that vault (it reads the vault, grants the node
-  identity access, and stores SAS definitions in it), and scope the node and
+- **Customer-managed Key Vault** (`key_vault_id`): the deployer reads the
+  vault and stores SAS definitions in it; the nodes and provisioner read
+  secrets from it. On a vault with the **RBAC permission model**, assign the
+  deployer **Key Vault Administrator** on the vault and scope the node and
   provisioner **Key Vault Secrets User** assignments to the vault instead of
-  the resource group.
+  the resource group. On a vault that uses **access policies**, assign the
+  deployer **Reader** on the vault (the management-plane read) and add access
+  policies: deployer -- secrets Get/List/Set/Delete and storage
+  Get/List/Set/Delete/GetSAS/ListSAS/SetSAS/DeleteSAS; node and provisioner
+  identities -- secrets Get/List.
+- **Admin password in Key Vault** (`admin_pwd_or_keyvault_secret_id` as a
+  secret reference): the deployer reads that secret at apply time, so grant it
+  **Key Vault Secrets User** on the secret (RBAC vault) or a secrets **Get**
+  access policy (policy vault) -- on whichever vault holds the password, which
+  is often not the deployment's vault.
 - **Separate persistent-storage resource group**: only storage accounts, the
   Key Vault, and (with deletion protection) their locks land there. Create a
   reduced copy of the step 3 role containing just the
   `Microsoft.Resources/subscriptions/resourceGroups/read`, `Microsoft.Storage`,
   and `Microsoft.KeyVault` blocks (actions and data actions), and assign it
   there; also move the node identity's Storage Blob Data Reader to that group.
+- **Custom VM images** (wrapper `custom_image_id` / `provisioner_custom_image_id`):
+  creating a VM from an image the deployer cannot read fails
+  (`LinkedAuthorizationFailed` on `galleries/images/versions/read`), so assign
+  the deployer **Reader** on the image -- for a Compute Gallery image, on the
+  gallery itself, so a refreshed image definition or version deploys without a
+  new grant. The gallery may live in another resource group or subscription;
+  the assignment goes wherever the image is.
 - **Private DNS zones** (wrapper `private_link_*_dns_zone_id`): assign the
   deployer **Private DNS Zone Contributor** on each zone.
 - **AzureAD-authenticated Terraform state**: assign the deployer **Storage

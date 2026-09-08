@@ -12,10 +12,14 @@
 # harmless.
 #
 # Inherited from ../../terraform.tfvars: azure_subscription_id, location,
-# resource_group_name, subnet_id, tags, key_vault_id, deletion_protection,
-# persistent_storage_resource_group, blob_/keyvault_/appconfig_private_dns_zone_id.
+# resource_group_name, subnet_id, tags, key_vault_id, admin_pwd_or_keyvault_secret_id,
+# deletion_protection, persistent_storage_resource_group, custom_image_id,
+# provisioner_custom_image_id, blob_/keyvault_/appconfig_private_dns_zone_id.
 #
 # This file holds only what the wrapper does not know:
+# admin_password_key_vault_id     - (OPTIONAL) Resource ID of the vault holding the cluster admin password,
+#                                    only when admin_pwd_or_keyvault_secret_id is a secret URI (the URI
+#                                    does not name the vault's resource group). Default = null.
 # deployer_principal_id           - (OPTIONAL) Object ID of an existing principal to deploy as (a user,
 #                                    service principal, or runner-VM managed identity). Default = null:
 #                                    a user-assigned managed identity named <rg>-deployer is created
@@ -46,6 +50,7 @@
 #   az identity show -g <rg> -n <name> --query principalId -o tsv    (managed identity)
 
 #------------OPTIONAL------------------
+admin_password_key_vault_id    = null
 deployer_principal_id          = null
 deployer_principal_type        = "User"
 operator_principal_ids         = {}
