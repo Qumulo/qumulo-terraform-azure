@@ -27,7 +27,7 @@ wait_for_private_endpoints() {
   # Storage account names are the deployment name with dashes stripped plus a
   # 1-based index; the count mirrors the provider's capacity formula (one
   # account per 200TB, minimum 5, cap 100).
-  local base count limit fqdns fqdn ip pending start elapsed
+  local base count limit fqdns fqdn ip pending start elapsed i
   base=$(echo "${deployment_name}" | tr -d '-')
   limit=${cluster_persistent_capacity_limit:-100}
   count=$(( (limit + 199) / 200 ))
