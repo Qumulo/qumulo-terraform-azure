@@ -67,7 +67,8 @@ For environments where separate platform automation finishes preparing each VM
 after boot: waits until a marker file exists on the VM's local disk (default
 `/tmp/provisioning-complete`; assign `provisioning_complete_file` in an earlier
 chained hook to override). The platform automation creates the marker as its
-final step. No timeout of its own; the deployment timeout is the backstop.
+final step. No timeout of its own; the provider timeout of the running
+operation is the backstop (see Timeouts below).
 Logs to the serial console as `[wait_for_provisioning_complete]`.
 
 ### wait-for-rhel-entitlement.sh (node pre_run)
@@ -76,8 +77,8 @@ For RHEL BYOS images -- for example Red Hat gold images -- that boot before
 their subscription entitlement is active. Package installation fails until Red
 Hat content is reachable, so this hook blocks the node boot script until `dnf`
 sees RHEL repositories and can refresh its cache. It never gives up on its
-own; the deployment's timeout bounds the wait. Marketplace PAYG images include
-RHUI and do not need it.
+own; the provider timeout of the running operation bounds the wait (see
+Timeouts below). Marketplace PAYG images include RHUI and do not need it.
 
 Enable it for the cluster nodes:
 
@@ -90,3 +91,15 @@ node_hooks_files = {
 The hook logs every poll to the VM serial console as
 `[wait_for_rhel_entitlement] ...`; the apply-side hook watch (see "Hook
 contract") shows the wait in the `terraform apply` output.
+
+### Timeouts
+
+These hooks wait inside every operation that boots a VM: the initial create,
+node replacement (a `vm_type`, zone, or image change), scale-out, and the
+provisioner VM of a scale-in. The provider's timeout for that operation is the
+only bound on the wait, so size `provider_timeout_minutes` (or each
+`provider_*_timeout_minutes`) for the platform's worst case -- not only the
+create timeout. With the 30-minute default, a node replacement whose new nodes
+each waited about five minutes ran out of time during the provider's final
+read, and Terraform reported the apply as failed although the replacement had
+completed.

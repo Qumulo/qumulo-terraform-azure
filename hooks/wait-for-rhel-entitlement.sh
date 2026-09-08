@@ -5,7 +5,7 @@
 # When registration is done by an external async process, first boot races it
 # and every package install fails. This hook waits until dnf can actually
 # resolve a package, and only then lets the boot script continue. No timeout:
-# the provider's deployment timeout is the backstop.
+# the provider timeout of the running operation is the backstop.
 #
 # Wire it as a pre_run hook (it runs before the boot script's first install):
 #   node_hooks_files        = { pre_run_file = "wait-for-rhel-entitlement.sh", ... }

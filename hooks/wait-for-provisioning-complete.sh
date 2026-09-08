@@ -9,7 +9,7 @@
 # earlier pre_run file in the chain) to override it.
 #
 # Wire it as a node and/or provisioner pre_run hook. It has no timeout of its
-# own: the provider's deployment timeout is the backstop.
+# own: the provider timeout of the running operation is the backstop.
 #
 # Inlined verbatim into a bash -xe -o pipefail boot script: no shebang, no
 # exit, and nothing may fail outside a condition context.
