@@ -59,3 +59,34 @@ node_hooks_files = {
   ]
 }
 ```
+## Included hooks
+
+### wait-for-provisioning-complete.sh (node or provisioner pre_run)
+
+For environments where separate platform automation finishes preparing each VM
+after boot: waits until a marker file exists on the VM's local disk (default
+`/tmp/provisioning-complete`; assign `provisioning_complete_file` in an earlier
+chained hook to override). The platform automation creates the marker as its
+final step. No timeout of its own; the deployment timeout is the backstop.
+Logs to the serial console as `[wait_for_provisioning_complete]`.
+
+### wait-for-rhel-entitlement.sh (node pre_run)
+
+For RHEL BYOS images -- for example Red Hat gold images -- that boot before
+their subscription entitlement is active. Package installation fails until Red
+Hat content is reachable, so this hook blocks the node boot script until `dnf`
+sees RHEL repositories and can refresh its cache. It never gives up on its
+own; the deployment's timeout bounds the wait. Marketplace PAYG images include
+RHUI and do not need it.
+
+Enable it for the cluster nodes:
+
+```hcl
+node_hooks_files = {
+  pre_run_file = "wait-for-rhel-entitlement.sh"
+}
+```
+
+The hook logs every poll to the VM serial console as
+`[wait_for_rhel_entitlement] ...`; the apply-side hook watch (see "Hook
+contract") shows the wait in the `terraform apply` output.
