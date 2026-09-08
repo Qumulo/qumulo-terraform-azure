@@ -31,13 +31,8 @@ output "cluster_uuid" {
 }
 
 output "resource_group_unique_name" {
-  description = "The actual, unique Azure resource group name used for this deployment (resource_group_name plus an immutable random suffix). Every deployment gets its own resource group -- see main.tf for why this must never be shared between clusters."
+  description = "The deployment's Azure resource group name (resource_group_name verbatim; retained under this name so existing tooling keeps working). Do not share this group with any other VMs; on Qumulo Core versions below 7.10.1 this is a hard requirement -- see main.tf."
   value       = local.resource_group_unique_name
-}
-
-output "resource_group_name_suffix" {
-  description = "The configured trailing label used in resource_group_unique_name (see the variable of the same name). Exposed as its own output, independent of local.resource_group_unique_name and the cluster resource, so tooling can recover the correct label even when only the random_string.resource_group_suffix resource exists in state (e.g. reconstructing the resource group name after a partially-failed deploy)."
-  value       = var.resource_group_name_suffix
 }
 
 output "deployment_unique_name" {

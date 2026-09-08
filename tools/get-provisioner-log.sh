@@ -25,21 +25,13 @@ if [ ! -d .terraform ] && [ ! -e terraform.tfstate ]; then
   cd "$(dirname "$0")/.."
 fi
 
-RG=$(terraform output -raw resource_group_unique_name 2>/dev/null || true)
+# The resource group name is the resource_group_name input, used verbatim.
+# The output covers the normal case; a failed first apply may have recorded
+# no outputs, so accept the name as an argument for that case.
+RG=${1:-$(terraform output -raw resource_group_unique_name 2>/dev/null || true)}
 if [ -z "$RG" ]; then
-  # No outputs recorded (e.g. apply failed very early): derive the resource
-  # group from the random suffix resource, which is created first. The
-  # trailing label comes from the resource_group_name_suffix output so a
-  # customized suffix (e.g. "-westus2" instead of the "-rg" default) is still
-  # recovered correctly; falls back to the literal "-rg" default only against
-  # a module version that predates that output.
-  SUFFIX=$(terraform output -raw resource_group_name_suffix 2>/dev/null || echo "-rg")
-  RG=$(terraform show -json | jq -r --arg suffix "$SUFFIX" '.values.root_module.resources[]?
-        | select(.address == "random_string.resource_group_suffix")
-        | "\(.values.keepers.resource_group_name)-\(.values.result)\($suffix)"')
-fi
-if [ -z "$RG" ]; then
-  echo "ERROR: no deployment found in Terraform state (was anything applied from this directory?)" >&2
+  echo "ERROR: no resource group recorded in Terraform outputs (the apply may have failed early)." >&2
+  echo "Pass the resource group name (your resource_group_name value): $0 <resource-group>" >&2
   exit 1
 fi
 
