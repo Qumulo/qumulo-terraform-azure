@@ -199,8 +199,8 @@ variable "create_appconfig_private_endpoint" {
     condition = !var.create_appconfig_private_endpoint || (
       var.private_link_appconfig_dns_zone_id == null &&
       var.private_link_keyvault_dns_zone_id == null &&
-      !var.disable_appconfig_public_network_access &&
-      !var.disable_keyvault_public_network_access
+      var.disable_appconfig_public_network_access != true &&
+      var.disable_keyvault_public_network_access != true
     )
     error_message = "create_appconfig_private_endpoint conflicts with the legacy private_link_*_dns_zone_id and disable_*_public_network_access variables; use one private-link generation at a time."
   }
@@ -221,8 +221,8 @@ variable "create_keyvault_private_endpoint" {
     condition = !var.create_keyvault_private_endpoint || (
       var.private_link_appconfig_dns_zone_id == null &&
       var.private_link_keyvault_dns_zone_id == null &&
-      !var.disable_appconfig_public_network_access &&
-      !var.disable_keyvault_public_network_access
+      var.disable_appconfig_public_network_access != true &&
+      var.disable_keyvault_public_network_access != true
     )
     error_message = "create_keyvault_private_endpoint conflicts with the legacy private_link_*_dns_zone_id and disable_*_public_network_access variables; use one private-link generation at a time."
   }
@@ -238,8 +238,8 @@ variable "create_storage_private_endpoint" {
     condition = !var.create_storage_private_endpoint || (
       var.private_link_appconfig_dns_zone_id == null &&
       var.private_link_keyvault_dns_zone_id == null &&
-      !var.disable_appconfig_public_network_access &&
-      !var.disable_keyvault_public_network_access
+      var.disable_appconfig_public_network_access != true &&
+      var.disable_keyvault_public_network_access != true
     )
     error_message = "create_storage_private_endpoint conflicts with the legacy private_link_*_dns_zone_id and disable_*_public_network_access variables; use one private-link generation at a time."
   }
