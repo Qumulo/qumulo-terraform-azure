@@ -128,6 +128,9 @@ resource "qumulo_filesystem_azure" "cluster" {
   custom_image_id                         = var.custom_image_id
   deletion_protection                     = var.deletion_protection
   deployment_name                         = var.deployment_name
+  create_appconfig_private_endpoint       = var.create_appconfig_private_endpoint
+  create_keyvault_private_endpoint        = var.create_keyvault_private_endpoint
+  create_storage_private_endpoint         = var.create_storage_private_endpoint
   disable_appconfig_public_network_access = var.disable_appconfig_public_network_access
   disable_keyvault_public_network_access  = var.disable_keyvault_public_network_access
   floating_ip_count                       = var.floating_ip_count

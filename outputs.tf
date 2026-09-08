@@ -64,3 +64,17 @@ output "endpoints" {
     smb    = "\\${try(qumulo_filesystem_azure.cluster.endpoint_ips[0], "pending")}\\<SMB Share Name>"
   }
 }
+
+output "private_endpoints" {
+  description = "Every private endpoint serving this deployment (storage accounts, Key Vault, App Configuration). The feed for external DNS systems such as Infoblox: publish an A record fqdn -> ip_address for each entry, and use target_resource_id to disable public network access once the records serve."
+  value = concat(
+    [for pe in values(local.storage_pes) : merge(pe, { service = "storage" })],
+    local.keyvault_pe != null ? [merge(local.keyvault_pe, { service = "keyvault" })] : [],
+    local.appconfig_pe != null ? [merge(local.appconfig_pe, { service = "appconfig" })] : [],
+  )
+}
+
+output "private_dns_records" {
+  description = "fqdn -> private IP of the Azure Private DNS A records the wrapper created. Empty when the zone variables are unset (external-DNS path)."
+  value       = try(module.private_dns[0].records, {})
+}

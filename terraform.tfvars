@@ -73,6 +73,9 @@ tags = {
 # provider_create_timeout_minutes - (OPTIONAL) Timeout override for cluster creation, in minutes. Defaults to provider_timeout_minutes if unset. Consider raising this for larger node_count deployments.
 # provider_update_timeout_minutes - (OPTIONAL) Timeout override for cluster updates (scaling, vm_type changes), in minutes. Defaults to provider_timeout_minutes if unset.
 # provider_delete_timeout_minutes - (OPTIONAL) Timeout override for cluster deletion, in minutes. Defaults to provider_timeout_minutes if unset.
+# provisioning_timeout_minutes    - (OPTIONAL) Provider-level cap (5-240 minutes) on how long create and scale-out wait for the boot-time provisioner to
+#                                    report completion, counted from the provisioner VM's launch, so it includes time spent in pre_run hooks. Null = the
+#                                    provider default of 30. Raise it together with the provider_*_timeout_minutes values when platform automation holds new VMs.
 # storage_class                  - (OPTIONAL) HOT cluster default is INTELLIGENT_TIERING, or override to STANDARD.
 # storage_replication_type       - (OPTIONAL) Azure storage replication type (immutable after creation). LRS or ZRS.
 # soft_capacity_limit_tb         - (OPTIONAL) Soft capacity limit in TB (50 to 10000). Default is 500TB. Can be increased to add storage, but cannot be decreased.  It's like a quota, unused capacity is not billed.
@@ -93,6 +96,7 @@ provider_timeout_minutes        = 30
 provider_create_timeout_minutes = null
 provider_update_timeout_minutes = null
 provider_delete_timeout_minutes = null
+provisioning_timeout_minutes    = null
 storage_class                   = null
 storage_replication_type        = null
 soft_capacity_limit_tb          = 100
@@ -148,3 +152,29 @@ nexus_account_id                        = null
 # cluster_fqdn - For clusters that want Qumulo Core to answer DNS queries directly with floating IPs (no separate DNS forwarder needed, unlike the AWS Route 53 Resolver pattern).
 #                This may be left 'null' to bypass any FQDN DNS resolution on the Qumulo cluster.
 cluster_fqdn = null
+
+# ***** OPTIONAL PRIVATE NETWORKING (post-deployment) *****
+# One apply deploys the cluster (public access on; the provider creates the private
+# endpoints for the storage accounts, Key Vault, and App Configuration as its final step,
+# no DNS attached), then -- in the same apply -- the wrapper creates the Azure Private DNS
+# A records (if the zone IDs are set), links the zones to the cluster VNet after the
+# records exist, and -- with disable_public_network_access_post_deploy set -- disables
+# public access as the last step. On the external-DNS path (e.g. Infoblox), leave the zone
+# IDs null and feed the private_endpoints output to your DNS system; lockdown is then yours
+# (fqdn/ip_address for records, target_resource_id for the publicNetworkAccess PATCH).
+# See README "Private networking (post-deployment)".
+# create_storage_private_endpoint           - (OPTIONAL) Private endpoints for the storage accounts (one per account). Conflicts with the legacy private_link_*/disable_* variables above.
+# create_keyvault_private_endpoint          - (OPTIONAL) Private endpoint for the Key Vault. Conflicts with key_vault_id and the legacy variables.
+# create_appconfig_private_endpoint         - (OPTIONAL) Private endpoint for the App Configuration store. Leave false to keep App Configuration on its public endpoint.
+# blob_private_dns_zone_id                  - (OPTIONAL) privatelink.blob.core.windows.net zone resource ID for wrapper-created A records.
+# keyvault_private_dns_zone_id              - (OPTIONAL) privatelink.vaultcore.azure.net zone resource ID. Same subscription as the blob zone.
+# appconfig_private_dns_zone_id             - (OPTIONAL) privatelink.azconfig.io zone resource ID for the App Configuration endpoint record. Same subscription as the other zones.
+# manage_dns_zone_vnet_links                - (OPTIONAL, default true) Link the supplied zones to the cluster VNet after their records exist; false when pre-linked.
+# disable_public_network_access_post_deploy - (OPTIONAL) Disable public access on storage/Key Vault/App Configuration as the apply's last step. Azure DNS path only.
+create_storage_private_endpoint           = false
+create_keyvault_private_endpoint          = false
+create_appconfig_private_endpoint         = false
+blob_private_dns_zone_id                  = null
+keyvault_private_dns_zone_id              = null
+appconfig_private_dns_zone_id             = null
+disable_public_network_access_post_deploy = false
