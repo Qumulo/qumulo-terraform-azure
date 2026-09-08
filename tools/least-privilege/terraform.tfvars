@@ -16,11 +16,11 @@
 # persistent_storage_resource_group, blob_/keyvault_/appconfig_private_dns_zone_id.
 #
 # This file holds only what the wrapper does not know:
-# deployer_principal_id           - Object ID of the principal that runs terraform (a user, service
-#                                    principal, or runner-VM managed identity). Exactly one of this or
-#                                    create_deployer_identity.
-# create_deployer_identity        - (OPTIONAL) Create a user-assigned managed identity for a runner VM
-#                                    instead of granting an existing principal. Default = false.
+# deployer_principal_id           - (OPTIONAL) Object ID of an existing principal to deploy as (a user,
+#                                    service principal, or runner-VM managed identity). Default = null:
+#                                    a user-assigned managed identity named <rg>-deployer is created
+#                                    instead -- attach it to the terraform runner VM (deployer_identity
+#                                    output) and pin it with ARM_CLIENT_ID / AZURE_CLIENT_ID.
 # deployer_principal_type         - (OPTIONAL) User, Group, or ServicePrincipal for deployer_principal_id.
 #                                    Default = "User"; managed identities are ServicePrincipal.
 # operator_principal_ids          - (OPTIONAL) Object IDs of additional humans who watch and troubleshoot
@@ -38,16 +38,19 @@
 #                                    grant. Default = true; set false to require manual purges.
 # name_suffix                     - (OPTIONAL) Suffix keeping custom role names tenant-unique.
 #                                    Default = resource_group_name.
-
-#-----------REQUIRED-------------------
-deployer_principal_id = "00000000-0000-0000-0000-000000000000"
+#
+# Finding an object ID with the az CLI:
+#   az ad signed-in-user show --query id -o tsv                      (yourself)
+#   az ad user show --id person@example.com --query id -o tsv        (another user)
+#   az ad sp show --id <appId> --query id -o tsv                     (service principal)
+#   az identity show -g <rg> -n <name> --query principalId -o tsv    (managed identity)
 
 #------------OPTIONAL------------------
-create_deployer_identity       = false
-deployer_principal_type       = "User"
-operator_principal_ids        = {}
+deployer_principal_id          = null
+deployer_principal_type        = "User"
+operator_principal_ids         = {}
 grant_executor_operator_access = true
-create_resource_group         = true
-state_storage_account_id      = null
-include_soft_delete_purge     = true
-name_suffix                   = null
+create_resource_group          = true
+state_storage_account_id       = null
+include_soft_delete_purge      = true
+name_suffix                    = null

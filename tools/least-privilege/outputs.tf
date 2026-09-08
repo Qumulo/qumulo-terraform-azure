@@ -15,7 +15,7 @@ output "provisioner_identity_id" {
 
 output "deployer_identity" {
   description = "The created deployer identity (attach it to the terraform runner VM). Null when deployer_principal_id was supplied instead."
-  value = var.create_deployer_identity ? {
+  value = var.deployer_principal_id == null ? {
     id           = azurerm_user_assigned_identity.deployer[0].id
     client_id    = azurerm_user_assigned_identity.deployer[0].client_id
     principal_id = azurerm_user_assigned_identity.deployer[0].principal_id

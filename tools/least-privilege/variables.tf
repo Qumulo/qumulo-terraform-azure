@@ -39,7 +39,7 @@ variable "subnet_id" {
 }
 
 variable "deployer_principal_id" {
-  description = "Object ID of the principal that runs terraform (a user, service principal, or the managed identity of a runner VM). Exactly one of this or create_deployer_identity must be set."
+  description = "OPTIONAL: Object ID of an existing principal to use as the deployer (a user, service principal, or the managed identity of a runner VM). When null, the default, this Terraform creates a user-assigned managed identity named <resource_group_name>-deployer instead -- attach it to the terraform runner VM (see the deployer_identity output)."
   type        = string
   default     = null
 }
@@ -52,17 +52,6 @@ variable "deployer_principal_type" {
   validation {
     condition     = contains(["User", "Group", "ServicePrincipal"], var.deployer_principal_type)
     error_message = "deployer_principal_type must be User, Group, or ServicePrincipal."
-  }
-}
-
-variable "create_deployer_identity" {
-  description = "Create a user-assigned managed identity to run terraform from a runner VM, instead of granting an existing principal. Exactly one of this or deployer_principal_id must be set."
-  type        = bool
-  default     = false
-
-  validation {
-    condition     = var.create_deployer_identity != (var.deployer_principal_id != null)
-    error_message = "Set exactly one of deployer_principal_id or create_deployer_identity."
   }
 }
 

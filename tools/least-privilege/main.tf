@@ -17,8 +17,11 @@ locals {
 
   key_vault_scope = coalesce(var.key_vault_id, local.resource_group_id)
 
-  deployer_principal_id   = var.create_deployer_identity ? azurerm_user_assigned_identity.deployer[0].principal_id : var.deployer_principal_id
-  deployer_principal_type = var.create_deployer_identity ? "ServicePrincipal" : var.deployer_principal_type
+  #The deployer defaults to a created identity; supplying deployer_principal_id overrides.
+  create_deployer_identity = var.deployer_principal_id == null
+
+  deployer_principal_id   = local.create_deployer_identity ? azurerm_user_assigned_identity.deployer[0].principal_id : var.deployer_principal_id
+  deployer_principal_type = local.create_deployer_identity ? "ServicePrincipal" : var.deployer_principal_type
 
   operator_ids = toset(concat(
     var.grant_executor_operator_access ? [data.azurerm_client_config.current.object_id] : [],
@@ -53,7 +56,7 @@ data "azurerm_resource_group" "persistent_storage" {
 #=======================================================================================
 
 resource "azurerm_user_assigned_identity" "deployer" {
-  count = var.create_deployer_identity ? 1 : 0
+  count = local.create_deployer_identity ? 1 : 0
 
   name                = "${var.resource_group_name}-deployer"
   location            = var.location
@@ -337,7 +340,7 @@ resource "azurerm_role_assignment" "deployer_resource_group" {
   role_definition_id               = azurerm_role_definition.deployer.role_definition_resource_id
   principal_id                     = local.deployer_principal_id
   principal_type                   = local.deployer_principal_type
-  skip_service_principal_aad_check = var.create_deployer_identity
+  skip_service_principal_aad_check = local.create_deployer_identity
 }
 
 resource "azurerm_role_assignment" "deployer_persistent_storage" {
@@ -347,7 +350,7 @@ resource "azurerm_role_assignment" "deployer_persistent_storage" {
   role_definition_id               = azurerm_role_definition.deployer_storage[0].role_definition_resource_id
   principal_id                     = local.deployer_principal_id
   principal_type                   = local.deployer_principal_type
-  skip_service_principal_aad_check = var.create_deployer_identity
+  skip_service_principal_aad_check = local.create_deployer_identity
 }
 
 resource "azurerm_role_assignment" "deployer_subscription" {
@@ -355,7 +358,7 @@ resource "azurerm_role_assignment" "deployer_subscription" {
   role_definition_id               = azurerm_role_definition.deployer_subscription.role_definition_resource_id
   principal_id                     = local.deployer_principal_id
   principal_type                   = local.deployer_principal_type
-  skip_service_principal_aad_check = var.create_deployer_identity
+  skip_service_principal_aad_check = local.create_deployer_identity
 }
 
 resource "azurerm_role_assignment" "deployer_network" {
@@ -363,7 +366,7 @@ resource "azurerm_role_assignment" "deployer_network" {
   role_definition_id               = azurerm_role_definition.deployer_network.role_definition_resource_id
   principal_id                     = local.deployer_principal_id
   principal_type                   = local.deployer_principal_type
-  skip_service_principal_aad_check = var.create_deployer_identity
+  skip_service_principal_aad_check = local.create_deployer_identity
 }
 
 resource "azurerm_role_assignment" "deployer_customer_key_vault" {
@@ -373,7 +376,7 @@ resource "azurerm_role_assignment" "deployer_customer_key_vault" {
   role_definition_name             = "Key Vault Administrator"
   principal_id                     = local.deployer_principal_id
   principal_type                   = local.deployer_principal_type
-  skip_service_principal_aad_check = var.create_deployer_identity
+  skip_service_principal_aad_check = local.create_deployer_identity
 }
 
 resource "azurerm_role_assignment" "deployer_private_dns" {
@@ -383,7 +386,7 @@ resource "azurerm_role_assignment" "deployer_private_dns" {
   role_definition_name             = "Private DNS Zone Contributor"
   principal_id                     = local.deployer_principal_id
   principal_type                   = local.deployer_principal_type
-  skip_service_principal_aad_check = var.create_deployer_identity
+  skip_service_principal_aad_check = local.create_deployer_identity
 }
 
 resource "azurerm_role_assignment" "deployer_state_storage" {
@@ -393,7 +396,7 @@ resource "azurerm_role_assignment" "deployer_state_storage" {
   role_definition_name             = "Storage Blob Data Contributor"
   principal_id                     = local.deployer_principal_id
   principal_type                   = local.deployer_principal_type
-  skip_service_principal_aad_check = var.create_deployer_identity
+  skip_service_principal_aad_check = local.create_deployer_identity
 }
 
 #=======================================================================================

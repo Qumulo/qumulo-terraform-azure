@@ -25,7 +25,9 @@ exactly these grants -- create, scale, node replacement, and destroy.
 | Built-in role assignments | see step 7 | node + provisioner identities, operators |
 
 The deployer principal is whatever runs `terraform` -- a user, a service
-principal, or the managed identity of a runner VM.
+principal, or the managed identity of a runner VM. (The Terraform in this
+directory creates a `<rg>-deployer` managed identity for that purpose by
+default; in the Portal, decide up front which principal deploys.)
 
 ## Before you start
 
@@ -36,7 +38,11 @@ one-time privileged step; nothing after it runs privileged.
 
 Have on hand: the subscription ID, a name for the deployment resource group,
 the resource ID of the cluster subnet, and the object ID of the deployer
-principal.
+principal. Object IDs come from the az CLI: `az ad signed-in-user show --query
+id -o tsv` (yourself), `az ad user show --id person@example.com --query id -o
+tsv` (another user), `az ad sp show --id <appId> --query id -o tsv` (a service
+principal), or `az identity show -g <rg> -n <name> --query principalId -o tsv`
+(a managed identity).
 
 ## Step 1: Create the deployment resource group
 

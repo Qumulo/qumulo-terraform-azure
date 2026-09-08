@@ -50,10 +50,22 @@ Terraform warns about the wrapper file's variables this module does not declare
 override an inherited value, set it in this directory's file -- the second
 `-var-file` wins.
 
-Then copy the `wrapper_tfvars` output into the wrapper's configuration. To run
-terraform from a VM instead of as a person, set `create_deployer_identity =
-true` and attach the `deployer_identity` output to the runner VM (pin it with
-`ARM_CLIENT_ID` / `AZURE_CLIENT_ID` if the VM has several identities).
+Then copy the `wrapper_tfvars` output into the wrapper's configuration. By
+default the module creates the deployer: a user-assigned managed identity named
+`<resource_group_name>-deployer`. Attach it to the terraform runner VM (the
+`deployer_identity` output has its IDs) and pin it with `ARM_CLIENT_ID` /
+`AZURE_CLIENT_ID` if the VM carries several identities. To deploy as an
+existing principal instead -- a person, service principal, or an identity you
+already manage -- set `deployer_principal_id`, which overrides the creation.
+
+Finding an object ID with the az CLI:
+
+```
+az ad signed-in-user show --query id -o tsv                      # yourself
+az ad user show --id person@example.com --query id -o tsv        # another user
+az ad sp show --id <appId> --query id -o tsv                     # service principal
+az identity show -g <rg> -n <name> --query principalId -o tsv    # managed identity
+```
 
 ## Operators: watching and troubleshooting a deployment
 
