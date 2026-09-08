@@ -65,6 +65,12 @@ locals {
   node_post_run_hook_content        = length(local.node_post_run_hook_files) == 0 ? null : join("\n", [for f in local.node_post_run_hook_files : "# --- hooks/${f} ---\n${file("${path.module}/hooks/${f}")}"])
   provisioner_pre_run_hook_content  = length(local.provisioner_pre_run_hook_files) == 0 ? null : join("\n", [for f in local.provisioner_pre_run_hook_files : "# --- hooks/${f} ---\n${file("${path.module}/hooks/${f}")}"])
   provisioner_post_run_hook_content = length(local.provisioner_post_run_hook_files) == 0 ? null : join("\n", [for f in local.provisioner_post_run_hook_files : "# --- hooks/${f} ---\n${file("${path.module}/hooks/${f}")}"])
+
+  #Console log tag of each wired hook (hooks/readme.md, "Hook contract"), for hooks-watch.tf.
+  hook_watch_tags = distinct([
+    for f in concat(local.node_pre_run_hook_files, local.node_post_run_hook_files, local.provisioner_pre_run_hook_files, local.provisioner_post_run_hook_files) :
+    replace(trimsuffix(basename(f), ".sh"), "-", "_")
+  ])
 }
 
 #Each Qumulo cluster MUST have its own dedicated Azure resource group. Azure floating IPs are attached as

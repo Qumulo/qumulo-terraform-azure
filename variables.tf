@@ -194,6 +194,12 @@ variable "floating_ip_count" {
   }
 }
 
+variable "hooks_apply_watch" {
+  description = "OPTIONAL: While a hook is wired, tail the VMs' boot-diagnostics serial logs during `terraform apply` and print the hooks' \"[<hook_name>] ...\" lines into the apply output (needs the az CLI; see hooks-watch.tf). Set false to opt out."
+  type        = bool
+  default     = true
+}
+
 variable "key_vault_id" {
   description = "OPTIONAL: Full Azure resource ID of a customer-managed Key Vault. If omitted, the provider creates one."
   type        = string

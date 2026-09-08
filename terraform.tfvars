@@ -104,6 +104,7 @@ soft_capacity_limit_tb          = 100
 # node_hooks_files        - OPTIONAL: Advanced use only.  Hooks run pre-boot-network or post-qumulo-core-install. override_file completely replaces the boot script. Executed only on first boot cycle.  See the docs.
 #                           pre_run_files/post_run_files (lists) chain several hooks in order; see hooks/readme.md.
 # provisioner_hooks_files - OPTIONAL: Advanced use only.  Hooks run pre-deploy or post-cluster-formation on the provisioner.  override_file completely replaces the boot script. Executed on every boot cycle.  See the docs.
+# hooks_apply_watch       - OPTIONAL: While hooks are wired, print their "[<hook_name>] ..." serial-console lines into the apply output (needs the az CLI). Default = true.
 node_hooks_files = {
   pre_run_file  = null
   post_run_file = null
@@ -115,6 +116,8 @@ provisioner_hooks_files = {
   post_run_file = null
   override_file = null
 }
+
+hooks_apply_watch = true
 
 # ****************************** OPTIONAL ADVANCED SETTINGS *****************************
 # disable_appconfig_public_network_access - (OPTIONAL) Disable public network access to the App Configuration instance the provider creates.

@@ -32,6 +32,10 @@ terraform {
       source  = "hashicorp/random"
       version = ">= 3.1"
     }
+    external = {
+      source  = "hashicorp/external"
+      version = ">= 2.0"
+    }
     qumulo = {
       source  = "qumulo-terraform-registry.s3.us-east-1.amazonaws.com/qumulo/qumulo"
       version = ">= 1.4.12"

@@ -17,6 +17,15 @@ chain must therefore be **bash**, and the chain must remain valid when merged:
   so `-e` cannot abort the boot.
 - Namespace functions and any non-`local` variables with the hook's own name
   (`wait_for_<hook>...`): chained hooks share one shell.
+- Log progress as `[<hook_name>] message`, where `hook_name` is the file name
+  without `.sh` and with dashes as underscores (`wait-for-x.sh` logs
+  `[wait_for_x]`), and write it to both stdout and `/dev/console` so boot
+  diagnostics captures it. A waiting hook logs at least once a minute. While a
+  `terraform apply` boots VMs with hooks wired, the wrapper tails those lines
+  from every VM's boot-diagnostics serial log into the apply output
+  (hooks-watch.tf, needs the az CLI; `hooks_apply_watch = false` opts out).
+  Outside an apply, `tools/hooks/watch-hooks.sh [<resource-group>]` shows the
+  same lines.
 
 Terraform enforces the cheap parts at plan time (`.sh` suffix, no shebang).
 Check the rest -- including that the merged chain parses -- with:
