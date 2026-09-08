@@ -28,7 +28,7 @@ output "deployer_role_definition_ids" {
     resource_group     = azurerm_role_definition.deployer.role_definition_resource_id
     subscription       = azurerm_role_definition.deployer_subscription.role_definition_resource_id
     network            = azurerm_role_definition.deployer_network.role_definition_resource_id
-    persistent_storage = var.persistent_storage_resource_group_name == null ? null : azurerm_role_definition.deployer_storage[0].role_definition_resource_id
+    persistent_storage = var.persistent_storage_resource_group == null ? null : azurerm_role_definition.deployer_storage[0].role_definition_resource_id
   }
 }
 

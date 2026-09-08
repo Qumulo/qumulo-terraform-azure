@@ -13,7 +13,7 @@ locals {
 
   resource_group_id = var.create_resource_group ? azurerm_resource_group.deployment[0].id : data.azurerm_resource_group.deployment[0].id
 
-  persistent_storage_scope = var.persistent_storage_resource_group_name == null ? null : data.azurerm_resource_group.persistent_storage[0].id
+  persistent_storage_scope = var.persistent_storage_resource_group == null ? null : data.azurerm_resource_group.persistent_storage[0].id
 
   key_vault_scope = coalesce(var.key_vault_id, local.resource_group_id)
 
@@ -43,9 +43,9 @@ data "azurerm_resource_group" "deployment" {
 }
 
 data "azurerm_resource_group" "persistent_storage" {
-  count = var.persistent_storage_resource_group_name == null ? 0 : 1
+  count = var.persistent_storage_resource_group == null ? 0 : 1
 
-  name = var.persistent_storage_resource_group_name
+  name = var.persistent_storage_resource_group
 }
 
 #=======================================================================================
@@ -263,7 +263,7 @@ resource "azurerm_role_definition" "subnet_join" {
 #=======================================================================================
 
 resource "azurerm_role_definition" "deployer_storage" {
-  count = var.persistent_storage_resource_group_name == null ? 0 : 1
+  count = var.persistent_storage_resource_group == null ? 0 : 1
 
   name        = "Qumulo CNQ Deployer Storage (${local.suffix})"
   scope       = local.persistent_storage_scope
@@ -341,7 +341,7 @@ resource "azurerm_role_assignment" "deployer_resource_group" {
 }
 
 resource "azurerm_role_assignment" "deployer_persistent_storage" {
-  count = var.persistent_storage_resource_group_name == null ? 0 : 1
+  count = var.persistent_storage_resource_group == null ? 0 : 1
 
   scope                            = local.persistent_storage_scope
   role_definition_id               = azurerm_role_definition.deployer_storage[0].role_definition_resource_id
@@ -377,7 +377,7 @@ resource "azurerm_role_assignment" "deployer_customer_key_vault" {
 }
 
 resource "azurerm_role_assignment" "deployer_private_dns" {
-  for_each = toset(var.private_dns_zone_ids)
+  for_each = toset(compact([var.blob_private_dns_zone_id, var.keyvault_private_dns_zone_id, var.appconfig_private_dns_zone_id]))
 
   scope                            = each.value
   role_definition_name             = "Private DNS Zone Contributor"

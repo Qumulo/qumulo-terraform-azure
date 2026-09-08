@@ -32,26 +32,28 @@ permission preflight. The `wrapper_tfvars` output lists exactly what to set.
 
 ## Usage
 
-```hcl
-# terraform.tfvars
-azure_subscription_id = "<subscription>"
-location              = "westus2"
-resource_group_name   = "rg-qumulo-prod-01"
-subnet_id             = "/subscriptions/<sub>/resourceGroups/<net-rg>/providers/Microsoft.Network/virtualNetworks/<vnet>/subnets/<subnet>"
-deployer_principal_id = "<object-id of the user/SP/MI that runs terraform>"
+The shared deployment values -- subscription, subnet, resource group, location,
+tags, `key_vault_id`, `deletion_protection`, `persistent_storage_resource_group`,
+and the `*_private_dns_zone_id` zones -- are inherited from the wrapper's
+top-level `terraform.tfvars`: this module declares the same variable names, so
+one file supplies both configurations. Fill in this directory's
+`terraform.tfvars` with what the wrapper does not know (the deployer principal
+and any extra operators), then run with both files, later file winning:
+
+```
+terraform init
+terraform apply -var-file=../../terraform.tfvars -var-file=terraform.tfvars
 ```
 
-`terraform apply`, then copy the `wrapper_tfvars` output into the wrapper's
-configuration. To run terraform from a VM instead, set
-`create_deployer_identity = true` and attach the `deployer_identity` output to
-the runner VM (pin it with `ARM_CLIENT_ID` / `AZURE_CLIENT_ID` if the VM has
-several identities).
+Terraform warns about the wrapper file's variables this module does not declare
+("Value for undeclared variable"); the warnings are expected and harmless. To
+override an inherited value, set it in this directory's file -- the second
+`-var-file` wins.
 
-Optional inputs: `key_vault_id` (customer-managed vault -- Key Vault grants are
-scoped to it), `persistent_storage_resource_group_name`,
-`private_dns_zone_ids` (grants Private DNS Zone Contributor for the wrapper's
-DNS records), `state_storage_account_id` (AzureAD-authenticated state backend),
-`deletion_protection` (adds lock actions).
+Then copy the `wrapper_tfvars` output into the wrapper's configuration. To run
+terraform from a VM instead of as a person, set `create_deployer_identity =
+true` and attach the `deployer_identity` output to the runner VM (pin it with
+`ARM_CLIENT_ID` / `AZURE_CLIENT_ID` if the VM has several identities).
 
 ## Operators: watching and troubleshooting a deployment
 

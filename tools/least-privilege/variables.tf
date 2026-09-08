@@ -78,16 +78,28 @@ variable "key_vault_id" {
   default     = null
 }
 
-variable "persistent_storage_resource_group_name" {
-  description = "OPTIONAL: Resource group holding persistent storage accounts when it differs from resource_group_name (the wrapper's persistent_storage_resource_group). Must already exist. Deployer and node grants are extended to it."
+variable "persistent_storage_resource_group" {
+  description = "OPTIONAL: Resource group holding persistent storage accounts when it differs from resource_group_name. Named to match the wrapper variable so the wrapper's terraform.tfvars supplies it directly. Must already exist. Deployer and node grants are extended to it."
   type        = string
   default     = null
 }
 
-variable "private_dns_zone_ids" {
-  description = "OPTIONAL: Resource IDs of privatelink DNS zones the deployer writes records into (the wrapper's private_link_*_dns_zone_id values). Grants Private DNS Zone Contributor on each."
-  type        = list(string)
-  default     = []
+variable "blob_private_dns_zone_id" {
+  description = "OPTIONAL: Resource ID of the blob privatelink DNS zone the wrapper writes records into. Named to match the wrapper variable so the wrapper's terraform.tfvars supplies it directly. Grants the deployer Private DNS Zone Contributor on the zone."
+  type        = string
+  default     = null
+}
+
+variable "keyvault_private_dns_zone_id" {
+  description = "OPTIONAL: Resource ID of the Key Vault privatelink DNS zone the wrapper writes records into. Named to match the wrapper variable so the wrapper's terraform.tfvars supplies it directly. Grants the deployer Private DNS Zone Contributor on the zone."
+  type        = string
+  default     = null
+}
+
+variable "appconfig_private_dns_zone_id" {
+  description = "OPTIONAL: Resource ID of the App Configuration privatelink DNS zone the wrapper writes records into. Named to match the wrapper variable so the wrapper's terraform.tfvars supplies it directly. Grants the deployer Private DNS Zone Contributor on the zone."
+  type        = string
+  default     = null
 }
 
 variable "state_storage_account_id" {
