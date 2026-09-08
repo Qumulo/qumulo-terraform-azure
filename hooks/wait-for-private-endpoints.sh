@@ -5,8 +5,8 @@
 # DNS records asynchronously (a scraper, Infoblox automation, etc.), the
 # deployment must not touch those services until in-VNet DNS returns the
 # endpoints' private IPs. This PROVISIONER pre_run hook derives the deployment's
-# endpoint FQDNs and waits, with no timeout: the provider's deployment timeout
-# is the backstop.
+# endpoint FQDNs and waits, with no timeout: the provider timeout of the
+# running operation is the backstop.
 #
 # Wire it as the provisioner pre_run hook only (node hooks run in a separate
 # script without the deployment variables, and the provisioner gate is
