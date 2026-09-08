@@ -385,6 +385,18 @@ variable "provisioner_vm_type" {
   nullable    = true
 }
 
+variable "provisioning_timeout_minutes" {
+  description = "OPTIONAL: Provider-level cap (in minutes, 5-240) on how long cluster creation and scale-out wait for the boot-time provisioner to report completion, measured from the provisioner VM's launch -- so it includes any time the VMs spend in pre_run hooks. Passed to the qumulo provider's azure.provisioning_timeout_minutes; null keeps the provider default of 30. Independent of the provider_*_timeout_minutes operation timeouts above, which bound the whole apply step from the outside: an environment whose platform automation holds new VMs for long needs both raised. Node replacement and scale-in use fixed internal waits the provider does not yet expose (provider issue #796)."
+  type        = number
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.provisioning_timeout_minutes == null || (var.provisioning_timeout_minutes >= 5 && var.provisioning_timeout_minutes <= 240)
+    error_message = "provisioning_timeout_minutes must be between 5 and 240 (the provider's accepted range), or null for the provider default of 30."
+  }
+}
+
 variable "resource_group_name" {
   description = "Name of this deployment's Azure resource group, used exactly as given. The provider creates the group if it does not exist. Alternatively, pre-create the group -- and resources for the deployment such as the Key Vault (see key_vault_id) -- when RBAC grants or policy exemptions must be in place before the first apply. Do not share the group with any other VMs. On Qumulo Core versions below 7.10.1 that is a hard requirement: the floating-IP reconciler on those versions strips secondary IPs from every NIC in the group it does not recognize, so a shared group loses addresses to the cluster. A plan-time warning reports this whenever the version to be installed -- explicit cluster_version or auto-selected latest -- is below 7.10.1. Versions 7.10.1 and later touch only addresses the cluster owns."
   type        = string

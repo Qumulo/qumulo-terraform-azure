@@ -44,5 +44,7 @@ provider "qumulo" {
     # identity). No explicit credentials are required here.
     subscription_id = var.azure_subscription_id
     environment     = var.azure_environment
+    # How long create and scale-out wait for the boot-time provisioner, hook holds included.
+    provisioning_timeout_minutes = var.provisioning_timeout_minutes
   }
 }
