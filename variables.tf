@@ -67,6 +67,34 @@ variable "allow_cidrs" {
   nullable    = true
 }
 
+variable "appconfig_private_dns_zone_id" {
+  description = "OPTIONAL: Full resource ID of the privatelink.azconfig.io (public cloud) or privatelink.azconfig.azure.us (US Government) private DNS zone. When set, the wrapper creates the App Configuration endpoint's A record in this zone after the cluster deploys. Requires create_appconfig_private_endpoint. Must share a subscription with the other zone variables. Leave null when an external DNS system consumes the private_endpoints output instead."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.appconfig_private_dns_zone_id == null || var.create_appconfig_private_endpoint
+    error_message = "appconfig_private_dns_zone_id requires create_appconfig_private_endpoint = true."
+  }
+
+  validation {
+    condition = var.appconfig_private_dns_zone_id == null || (
+      can(regex("^/subscriptions/[0-9a-fA-F-]+/resourceGroups/[^/]+/providers/Microsoft\\.Network/privateDnsZones/[^/]+$", var.appconfig_private_dns_zone_id)) &&
+      endswith(var.appconfig_private_dns_zone_id, var.azure_environment == "usgovernment" ? "privatelink.azconfig.azure.us" : "privatelink.azconfig.io")
+    )
+    error_message = "appconfig_private_dns_zone_id must be a full private DNS zone resource ID for the App Configuration privatelink zone matching azure_environment (privatelink.azconfig.io for public, privatelink.azconfig.azure.us for usgovernment)."
+  }
+
+  validation {
+    condition = var.appconfig_private_dns_zone_id == null || (
+      (var.blob_private_dns_zone_id == null || split("/", var.appconfig_private_dns_zone_id)[2] == split("/", var.blob_private_dns_zone_id)[2]) &&
+      (var.keyvault_private_dns_zone_id == null || split("/", var.appconfig_private_dns_zone_id)[2] == split("/", var.keyvault_private_dns_zone_id)[2])
+    )
+    error_message = "appconfig_private_dns_zone_id must be in the same subscription as the other private DNS zone variables (the wrapper uses one aliased DNS provider)."
+  }
+}
+
 variable "availability_zones" {
   description = "OPTIONAL: Availability zones for deployment, e.g. [\"1\", \"2\", \"3\"]. Omit for zoneless regions. Zone support is validated dynamically by the provider."
   type        = list(string)
@@ -90,6 +118,26 @@ variable "azure_subscription_id" {
   description = "Azure subscription ID. Required -- the qumulo provider only falls back to the ARM_SUBSCRIPTION_ID environment variable, not the active Azure CLI context, so `az login` alone is not sufficient. Set this explicitly (or export ARM_SUBSCRIPTION_ID and pass it through as this variable's value)."
   type        = string
   nullable    = false
+}
+
+variable "blob_private_dns_zone_id" {
+  description = "OPTIONAL: Full resource ID of the privatelink.blob.core.windows.net (public cloud) or privatelink.blob.core.usgovcloudapi.net (US Government) private DNS zone. When set, the wrapper creates one A record per storage-account private endpoint in this zone after the cluster deploys. Requires create_storage_private_endpoint. Must share a subscription with keyvault_private_dns_zone_id. Leave null when an external DNS system (e.g. Infoblox) consumes the private_endpoints output instead."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.blob_private_dns_zone_id == null || var.create_storage_private_endpoint
+    error_message = "blob_private_dns_zone_id requires create_storage_private_endpoint = true."
+  }
+
+  validation {
+    condition = var.blob_private_dns_zone_id == null || (
+      can(regex("^/subscriptions/[0-9a-fA-F-]+/resourceGroups/[^/]+/providers/Microsoft\\.Network/privateDnsZones/[^/]+$", var.blob_private_dns_zone_id)) &&
+      endswith(var.blob_private_dns_zone_id, var.azure_environment == "usgovernment" ? "privatelink.blob.core.usgovcloudapi.net" : "privatelink.blob.core.windows.net")
+    )
+    error_message = "blob_private_dns_zone_id must be a full private DNS zone resource ID for the blob privatelink zone matching azure_environment (privatelink.blob.core.windows.net for public, privatelink.blob.core.usgovcloudapi.net for usgovernment)."
+  }
 }
 
 variable "cluster_fqdn" {
@@ -141,6 +189,62 @@ variable "cluster_version" {
   nullable    = true
 }
 
+variable "create_appconfig_private_endpoint" {
+  description = "OPTIONAL: Have the provider create a private endpoint for the App Configuration store, with no DNS attachment and public network access left on (see create_storage_private_endpoint for the deployment mode). Leave false for environments that reach App Configuration over its public endpoint. Conflicts with the LEGACY private_link_*_dns_zone_id and disable_*_public_network_access variables."
+  type        = bool
+  default     = false
+  nullable    = false
+
+  validation {
+    condition = !var.create_appconfig_private_endpoint || (
+      var.private_link_appconfig_dns_zone_id == null &&
+      var.private_link_keyvault_dns_zone_id == null &&
+      var.disable_appconfig_public_network_access != true &&
+      var.disable_keyvault_public_network_access != true
+    )
+    error_message = "create_appconfig_private_endpoint conflicts with the legacy private_link_*_dns_zone_id and disable_*_public_network_access variables; use one private-link generation at a time."
+  }
+}
+
+variable "create_keyvault_private_endpoint" {
+  description = "OPTIONAL: Have the provider create a private endpoint for the Key Vault, with no DNS attachment and public network access left on (see create_storage_private_endpoint for the deployment mode). Conflicts with key_vault_id -- a customer-managed vault's networking belongs to the customer -- and with the LEGACY private_link_*_dns_zone_id and disable_*_public_network_access variables."
+  type        = bool
+  default     = false
+  nullable    = false
+
+  validation {
+    condition     = !(var.create_keyvault_private_endpoint && var.key_vault_id != null)
+    error_message = "create_keyvault_private_endpoint conflicts with key_vault_id: a customer-managed vault's private endpoints and network access are managed outside this deployment."
+  }
+
+  validation {
+    condition = !var.create_keyvault_private_endpoint || (
+      var.private_link_appconfig_dns_zone_id == null &&
+      var.private_link_keyvault_dns_zone_id == null &&
+      var.disable_appconfig_public_network_access != true &&
+      var.disable_keyvault_public_network_access != true
+    )
+    error_message = "create_keyvault_private_endpoint conflicts with the legacy private_link_*_dns_zone_id and disable_*_public_network_access variables; use one private-link generation at a time."
+  }
+}
+
+variable "create_storage_private_endpoint" {
+  description = "OPTIONAL: Enable the private-endpoint deployment mode for the cluster's storage accounts: the provider creates one private endpoint per storage account with no DNS attachment and leaves public network access on; the wrapper then, optionally, creates private DNS records and a public-access lockdown post-deployment (see the blob_/keyvault_/appconfig_private_dns_zone_id and disable_public_network_access_post_deploy variables). Selection is per resource: create_keyvault_private_endpoint and create_appconfig_private_endpoint control the other two services independently, so an environment can put storage and Key Vault behind private endpoints while App Configuration stays public. Conflicts with the LEGACY private_link_*_dns_zone_id and disable_*_public_network_access variables."
+  type        = bool
+  default     = false
+  nullable    = false
+
+  validation {
+    condition = !var.create_storage_private_endpoint || (
+      var.private_link_appconfig_dns_zone_id == null &&
+      var.private_link_keyvault_dns_zone_id == null &&
+      var.disable_appconfig_public_network_access != true &&
+      var.disable_keyvault_public_network_access != true
+    )
+    error_message = "create_storage_private_endpoint conflicts with the legacy private_link_*_dns_zone_id and disable_*_public_network_access variables; use one private-link generation at a time."
+  }
+}
+
 variable "custom_image_id" {
   description = "OPTIONAL: Custom VM image resource ID for cluster nodes. If omitted, the default Qumulo image (Ubuntu) is used. Mutually exclusive with marketplace_image."
   type        = string
@@ -171,15 +275,36 @@ variable "deployment_name" {
 }
 
 variable "disable_appconfig_public_network_access" {
-  description = "OPTIONAL: Disable public network access to the App Configuration instance the provider creates."
+  description = "LEGACY: Disable public network access to the App Configuration instance the provider creates. Requires private_link_appconfig_dns_zone_id. Superseded by the create_*_private_endpoint variables + disable_public_network_access_post_deploy."
   type        = bool
   default     = false
 }
 
 variable "disable_keyvault_public_network_access" {
-  description = "OPTIONAL: Disable public network access to the Key Vault the provider creates or uses."
+  description = "LEGACY: Disable public network access to the Key Vault the provider creates or uses. Requires private_link_keyvault_dns_zone_id. Superseded by the create_*_private_endpoint variables + disable_public_network_access_post_deploy."
   type        = bool
   default     = false
+}
+
+variable "disable_public_network_access_post_deploy" {
+  description = "OPTIONAL: Disable public network access on the storage accounts, the Key Vault, and the App Configuration store, as the last step of the apply, after the wrapper's Azure Private DNS records and zone links exist. Applies only to services whose create_*_private_endpoint flag is set, and only when the wrapper manages their Azure Private DNS records (each enabled service requires its zone variable): the wrapper only closes public paths whose private replacements it created itself. On the external-DNS path (e.g. Infoblox), disable public access from your own tooling using the private_endpoints output -- each entry carries the target_resource_id to PATCH -- once your DNS serves the records."
+  type        = bool
+  default     = false
+  nullable    = false
+
+  validation {
+    condition     = !var.disable_public_network_access_post_deploy || var.create_storage_private_endpoint || var.create_keyvault_private_endpoint || var.create_appconfig_private_endpoint
+    error_message = "disable_public_network_access_post_deploy requires at least one create_*_private_endpoint flag: the wrapper only closes public paths whose private replacements exist."
+  }
+
+  validation {
+    condition = !var.disable_public_network_access_post_deploy || (
+      (!var.create_storage_private_endpoint || var.blob_private_dns_zone_id != null) &&
+      (!var.create_keyvault_private_endpoint || var.keyvault_private_dns_zone_id != null) &&
+      (!var.create_appconfig_private_endpoint || var.appconfig_private_dns_zone_id != null)
+    )
+    error_message = "disable_public_network_access_post_deploy requires the wrapper to manage Azure Private DNS for every selected service: each enabled create_*_private_endpoint flag needs its matching *_private_dns_zone_id. On the external-DNS path, disable public access from your own tooling using the private_endpoints output once your DNS serves the records."
+  }
 }
 
 variable "floating_ip_count" {
@@ -201,9 +326,43 @@ variable "key_vault_id" {
   nullable    = true
 }
 
+variable "keyvault_private_dns_zone_id" {
+  description = "OPTIONAL: Full resource ID of the privatelink.vaultcore.azure.net (public cloud) or privatelink.vaultcore.usgovcloudapi.net (US Government) private DNS zone. When set, the wrapper creates an A record for the Key Vault private endpoint in this zone after the cluster deploys. Requires create_keyvault_private_endpoint. Must share a subscription with blob_private_dns_zone_id. Leave null when an external DNS system consumes the private_endpoints output instead."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.keyvault_private_dns_zone_id == null || var.create_keyvault_private_endpoint
+    error_message = "keyvault_private_dns_zone_id requires create_keyvault_private_endpoint = true."
+  }
+
+  validation {
+    condition = var.keyvault_private_dns_zone_id == null || (
+      can(regex("^/subscriptions/[0-9a-fA-F-]+/resourceGroups/[^/]+/providers/Microsoft\\.Network/privateDnsZones/[^/]+$", var.keyvault_private_dns_zone_id)) &&
+      endswith(var.keyvault_private_dns_zone_id, var.azure_environment == "usgovernment" ? "privatelink.vaultcore.usgovcloudapi.net" : "privatelink.vaultcore.azure.net")
+    )
+    error_message = "keyvault_private_dns_zone_id must be a full private DNS zone resource ID for the Key Vault privatelink zone matching azure_environment (privatelink.vaultcore.azure.net for public, privatelink.vaultcore.usgovcloudapi.net for usgovernment)."
+  }
+
+  validation {
+    condition = var.keyvault_private_dns_zone_id == null || var.blob_private_dns_zone_id == null || (
+      split("/", var.keyvault_private_dns_zone_id)[2] == split("/", var.blob_private_dns_zone_id)[2]
+    )
+    error_message = "keyvault_private_dns_zone_id and blob_private_dns_zone_id must be in the same subscription (the wrapper uses one aliased DNS provider)."
+  }
+}
+
 variable "location" {
   description = "Azure region for deployment"
   type        = string
+  nullable    = false
+}
+
+variable "manage_dns_zone_vnet_links" {
+  description = "OPTIONAL: When the blob_/keyvault_/appconfig_private_dns_zone_id variables are set, link those zones to the cluster VNet -- strictly after their records exist, so in-VNet resolution never sees an empty privatelink zone. Set false when the zones are already linked to this VNet (shared hub zones, or a second cluster in the same VNet); the pre-linked hazard in the README then applies. No effect when the zone variables are unset."
+  type        = bool
+  default     = true
   nullable    = false
 }
 
@@ -295,14 +454,14 @@ variable "persistent_storage_resource_group" {
 }
 
 variable "private_link_appconfig_dns_zone_id" {
-  description = "OPTIONAL: Resource ID of the privatelink.azconfig.io private DNS zone."
+  description = "LEGACY: Resource ID of the privatelink.azconfig.io private DNS zone; the provider creates the App Configuration private endpoint bound to this zone during deployment. Superseded by create_appconfig_private_endpoint (DNS then happens post-deployment)."
   type        = string
   default     = null
   nullable    = true
 }
 
 variable "private_link_keyvault_dns_zone_id" {
-  description = "OPTIONAL: Resource ID of the privatelink.vaultcore.azure.net private DNS zone."
+  description = "LEGACY: Resource ID of the privatelink.vaultcore.azure.net private DNS zone; the provider creates the Key Vault private endpoint bound to this zone during deployment. Superseded by create_keyvault_private_endpoint (DNS then happens post-deployment)."
   type        = string
   default     = null
   nullable    = true
