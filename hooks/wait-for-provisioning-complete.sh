@@ -3,16 +3,27 @@
 # For environments where separate automation (configuration management, security
 # agents, registration tooling) finishes preparing each VM after it boots, and
 # the deployment must not proceed until that work is done: this hook waits until
-# a marker file exists on the VM's local disk. The platform automation creates
-# the marker as its final step. Default path /tmp/provisioning-complete;
-# assign provisioning_complete_file before this hook runs (for example in an
-# earlier pre_run file in the chain) to override it.
+# the marker file named below exists on the VM's local disk. The platform
+# automation creates it as its final step.
 #
 # Wire it as a node and/or provisioner pre_run hook. It has no timeout of its
 # own: the provider timeout of the running operation is the backstop.
 #
 # Inlined verbatim into a bash -xe -o pipefail boot script: no shebang, no
 # exit, and nothing may fail outside a condition context.
+
+# =============================================================================
+# MARKER FILE
+#
+# This hook waits for the file below to exist. Your platform automation must
+# create it on every VM once the VM is ready; an empty file is enough:
+#
+#     touch /tmp/provisioning-complete
+#
+# To wait for a different path, change the default here, or assign
+# provisioning_complete_file in an earlier hook of the same chain.
+# =============================================================================
+wait_for_provisioning_complete_marker="${provisioning_complete_file:-/tmp/provisioning-complete}"
 
 wait_for_provisioning_complete() {
   # Boot diagnostics always captures /dev/console; whether plain stdout
@@ -24,11 +35,11 @@ wait_for_provisioning_complete() {
     echo "$@" > /dev/console 2>/dev/null || true
   }
 
-  local marker="${provisioning_complete_file:-/tmp/provisioning-complete}"
+  local marker="$wait_for_provisioning_complete_marker"
   local attempt=0
   while [ ! -e "$marker" ]; do
     attempt=$((attempt + 1))
-    wait_for_provisioning_complete_log "[wait_for_provisioning_complete] waiting for $marker (attempt $attempt)"
+    wait_for_provisioning_complete_log "[wait_for_provisioning_complete] waiting for platform automation to create $marker (attempt $attempt)"
     sleep 10
   done
   wait_for_provisioning_complete_log "[wait_for_provisioning_complete] $marker present; continuing boot"

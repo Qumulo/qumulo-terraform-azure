@@ -64,10 +64,11 @@ node_hooks_files = {
 ### wait-for-provisioning-complete.sh (node or provisioner pre_run)
 
 For environments where separate platform automation finishes preparing each VM
-after boot: waits until a marker file exists on the VM's local disk (default
-`/tmp/provisioning-complete`; assign `provisioning_complete_file` in an earlier
-chained hook to override). The platform automation creates the marker as its
-final step. No timeout of its own; the provider timeout of the running
+after boot: waits until a marker file exists on the VM's local disk. The path is
+the one setting at the top of the hook, `/tmp/provisioning-complete` by default;
+change it there, or assign `provisioning_complete_file` in an earlier chained
+hook. The platform automation creates the file (`touch
+/tmp/provisioning-complete` is enough) as its final step. No timeout of its own; the provider timeout of the running
 operation is the backstop (see Timeouts below).
 Logs to the serial console as `[wait_for_provisioning_complete]`.
 
