@@ -32,7 +32,9 @@ module "cloud_native_qumulo_production" {
   # the storage accounts and Key Vault (public access stays on for the deployment itself),
   # and the wrapper then owns DNS records, the App Configuration private endpoint, and the
   # public-access lockdown. See examples/azure-private-link.tf for the staged flow.
-  create_private_endpoints = true
+  create_storage_private_endpoint   = true
+  create_keyvault_private_endpoint  = true
+  create_appconfig_private_endpoint = true
   # Azure Private DNS records + the App Config endpoint land in the same apply (omit the
   # zone IDs on the external-DNS path and use the private_endpoints output instead):
   # blob_private_dns_zone_id      = "/subscriptions/<sub>/resourceGroups/<dns-rg>/providers/Microsoft.Network/privateDnsZones/privatelink.blob.core.windows.net"

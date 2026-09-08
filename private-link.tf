@@ -1,8 +1,11 @@
 #Post-deployment private networking, all in ONE apply. The qumulo provider
-#deploys the cluster with public network access enabled and (when
-#create_private_endpoints is set) creates the private endpoints -- one per
-#storage account, one for the Key Vault, one for the App Configuration store --
-#as its final step, with no DNS attached, and reports them in three outputs.
+#deploys the cluster with public network access enabled and creates a private
+#endpoint per selected service (create_storage_private_endpoint: one per
+#storage account; create_keyvault_private_endpoint; and
+#create_appconfig_private_endpoint) as its final step, with no DNS attached,
+#reporting them in three outputs. Selection is per resource, so an environment
+#can put storage and Key Vault behind private endpoints while App
+#Configuration stays public.
 #In the same apply, after the cluster completes, the wrapper:
 #  1. Writes A records for the endpoints into the caller's Azure Private DNS
 #     zones (or the caller feeds the private_endpoints output to an external
@@ -28,36 +31,17 @@
 #per-record preconditions fail loudly if the provider's output ever diverges.
 
 locals {
-  #INTERIM: sourced from var.private_endpoints_override until the provider
-  #release that ships the outputs. Flip these three to:
-  #  qumulo_filesystem_azure.cluster.appconfig_private_endpoint
-  #  qumulo_filesystem_azure.cluster.keyvault_private_endpoint
-  #  qumulo_filesystem_azure.cluster.storage_private_endpoints
-  #and bump the qumulo provider pin in versions.tf when it ships. The
-  #bridge-aware count branches below collapse to the formula at the same time.
-  appconfig_pe = var.create_private_endpoints ? qumulo_filesystem_azure.cluster.appconfig_private_endpoint : null
-  keyvault_pe  = var.create_private_endpoints ? qumulo_filesystem_azure.cluster.keyvault_private_endpoint : null
-  storage_pes  = var.create_private_endpoints ? qumulo_filesystem_azure.cluster.storage_private_endpoints : {}
+  appconfig_pe = var.create_appconfig_private_endpoint ? qumulo_filesystem_azure.cluster.appconfig_private_endpoint : null
+  keyvault_pe  = var.create_keyvault_private_endpoint ? qumulo_filesystem_azure.cluster.keyvault_private_endpoint : null
+  storage_pes  = var.create_storage_private_endpoint ? qumulo_filesystem_azure.cluster.storage_private_endpoints : {}
 
-  #Bridge in use = counts come from the supplied override; otherwise from the
-  #contract: one storage account (and endpoint) per 200TB of soft capacity,
-  #minimum 5, capped at 100; a Key Vault endpoint unless the vault is
-  #customer-managed; an App Configuration endpoint always.
-  bridge_in_use = var.private_endpoints_override.appconfig != null || var.private_endpoints_override.keyvault != null || length(var.private_endpoints_override.storage) > 0
-
-  storage_pe_count = !var.create_private_endpoints ? 0 : (
-    local.bridge_in_use
-    ? length(local.storage_pes)
-    : min(max(ceil(var.soft_capacity_limit_tb / 200), 5), 100)
-  )
-  keyvault_pe_count = !var.create_private_endpoints ? 0 : (
-    local.bridge_in_use
-    ? (local.keyvault_pe != null ? 1 : 0)
-    : (var.key_vault_id == null ? 1 : 0)
-  )
-  appconfig_pe_count = !var.create_private_endpoints ? 0 : (
-    local.bridge_in_use ? (local.appconfig_pe != null ? 1 : 0) : 1
-  )
+  #Counts must be known at plan while the endpoint contents are computed during
+  #apply; the storage formula (one account per 200TB of soft capacity, minimum
+  #5, capped at 100) and endpoint-name suffixes are part of the provider
+  #contract, and per-record preconditions fail loudly if the output diverges.
+  storage_pe_count   = var.create_storage_private_endpoint ? min(max(ceil(var.soft_capacity_limit_tb / 200), 5), 100) : 0
+  keyvault_pe_count  = var.create_keyvault_private_endpoint ? 1 : 0
+  appconfig_pe_count = var.create_appconfig_private_endpoint ? 1 : 0
 
   #Storage endpoint lookups, matched by the contractual name suffix
   #"-storage-endpoint-<N>" (1-based). Values are unknown at plan on a fresh
@@ -129,7 +113,7 @@ locals {
       resource_id = one(local.storage_pe_matches[i]).target_resource_id
       type        = "Microsoft.Storage/storageAccounts@2024-01-01"
     }],
-    var.key_vault_id == null && local.keyvault_pe_count > 0 ? [{
+    local.keyvault_pe_count > 0 ? [{
       resource_id = local.keyvault_pe.target_resource_id
       type        = "Microsoft.KeyVault/vaults@2023-07-01"
     }] : [],
@@ -138,7 +122,7 @@ locals {
       type        = "Microsoft.AppConfiguration/configurationStores@2024-05-01"
     }] : [],
   )
-  lockdown_target_count = local.storage_pe_count + (var.key_vault_id == null ? local.keyvault_pe_count : 0) + local.appconfig_pe_count
+  lockdown_target_count = local.storage_pe_count + local.keyvault_pe_count + local.appconfig_pe_count
 }
 
 module "network_lockdown" {

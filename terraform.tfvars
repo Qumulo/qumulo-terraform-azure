@@ -154,14 +154,17 @@ cluster_fqdn = null
 # IDs null and feed the private_endpoints output to your DNS system; lockdown is then yours
 # (fqdn/ip_address for records, target_resource_id for the publicNetworkAccess PATCH).
 # See README "Private networking (post-deployment)".
-# create_private_endpoints                  - (OPTIONAL) Enable the private-endpoint deployment mode. Conflicts with the legacy private_link_*/disable_* variables above.
+# create_storage_private_endpoint           - (OPTIONAL) Private endpoints for the storage accounts (one per account). Conflicts with the legacy private_link_*/disable_* variables above.
+# create_keyvault_private_endpoint          - (OPTIONAL) Private endpoint for the Key Vault. Conflicts with key_vault_id and the legacy variables.
+# create_appconfig_private_endpoint         - (OPTIONAL) Private endpoint for the App Configuration store. Leave false to keep App Configuration on its public endpoint.
 # blob_private_dns_zone_id                  - (OPTIONAL) privatelink.blob.core.windows.net zone resource ID for wrapper-created A records.
 # keyvault_private_dns_zone_id              - (OPTIONAL) privatelink.vaultcore.azure.net zone resource ID. Same subscription as the blob zone.
 # appconfig_private_dns_zone_id             - (OPTIONAL) privatelink.azconfig.io zone resource ID for the App Configuration endpoint record. Same subscription as the other zones.
 # manage_dns_zone_vnet_links                - (OPTIONAL, default true) Link the supplied zones to the cluster VNet after their records exist; false when pre-linked.
 # disable_public_network_access_post_deploy - (OPTIONAL) Disable public access on storage/Key Vault/App Configuration as the apply's last step. Azure DNS path only.
-# private_endpoints_override                - (INTERIM) Endpoint details, mirroring the provider outputs, until the release that ships them.
-create_private_endpoints                  = false
+create_storage_private_endpoint           = false
+create_keyvault_private_endpoint          = false
+create_appconfig_private_endpoint         = false
 blob_private_dns_zone_id                  = null
 keyvault_private_dns_zone_id              = null
 appconfig_private_dns_zone_id             = null

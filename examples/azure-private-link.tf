@@ -38,13 +38,16 @@ module "cloud_native_qumulo_private" {
   node_count                      = 3
 
   #------------PRIVATE NETWORKING------------------
-  create_private_endpoints = true
+  # Per-resource selection: this example puts storage and Key Vault behind
+  # private endpoints and leaves App Configuration on its public endpoint.
+  create_storage_private_endpoint   = true
+  create_keyvault_private_endpoint  = true
+  create_appconfig_private_endpoint = false
 
   # Azure Private DNS path (omit all three for external DNS such as Infoblox and use the
   # private_endpoints output instead):
-  appconfig_private_dns_zone_id = "/subscriptions/<sub>/resourceGroups/<dns-rg>/providers/Microsoft.Network/privateDnsZones/privatelink.azconfig.io"
-  blob_private_dns_zone_id      = "/subscriptions/<sub>/resourceGroups/<dns-rg>/providers/Microsoft.Network/privateDnsZones/privatelink.blob.core.windows.net"
-  keyvault_private_dns_zone_id  = "/subscriptions/<sub>/resourceGroups/<dns-rg>/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.azure.net"
+  blob_private_dns_zone_id     = "/subscriptions/<sub>/resourceGroups/<dns-rg>/providers/Microsoft.Network/privateDnsZones/privatelink.blob.core.windows.net"
+  keyvault_private_dns_zone_id = "/subscriptions/<sub>/resourceGroups/<dns-rg>/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.azure.net"
 
   # Last step of the same apply (Azure DNS path only; omit on the external-DNS path):
   disable_public_network_access_post_deploy = true
