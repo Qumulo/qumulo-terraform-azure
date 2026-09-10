@@ -175,6 +175,18 @@ variable "cluster_product_type" {
   }
 }
 
+variable "cluster_stall_window" {
+  description = "OPTIONAL: How long the provisioner lets the cluster report no change at all before it gives up on a node addition, removal, or replacement -- a duration such as \"20m\", \"45m\" or \"2h\". Passed to the qumulo provider's cluster_stall_window; null keeps the provider default of 20m. This bounds silence, not work: while quorum, membership, or the restriper keep changing, the operation runs for as long as it needs, so there is no overall maximum. Raise it for clusters whose membership changes settle slowly. The provider refuses values under 1m and warns under 5m: a short window can abandon an apply partway through an operation that was still progressing, leaving the cluster mid-change. Requires provider 1.4.14 or later."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.cluster_stall_window == null || can(regex("^([0-9]+(\\.[0-9]+)?[hms])+$", var.cluster_stall_window))
+    error_message = "cluster_stall_window must be a duration made of numbers with h, m, or s units, such as \"20m\", \"90s\" or \"1h30m\", or null for the provider default of 20m."
+  }
+}
+
 variable "cluster_uuid" {
   description = "OPTIONAL: UUID of an existing Qumulo cluster to import/adopt, for the rare case where the cluster's UUID cannot be auto-recovered. Leave null for new deployments."
   type        = string
@@ -571,7 +583,7 @@ variable "provisioner_vm_type" {
 }
 
 variable "provisioning_timeout_minutes" {
-  description = "OPTIONAL: Provider-level cap (in minutes, 5-240) on how long cluster creation and scale-out wait for the boot-time provisioner to report completion, measured from the provisioner VM's launch -- so it includes any time the VMs spend in pre_run hooks. Passed to the qumulo provider's azure.provisioning_timeout_minutes; null keeps the provider default of 30. Independent of the provider_*_timeout_minutes operation timeouts above, which bound the whole apply step from the outside: an environment whose platform automation holds new VMs for long needs both raised. Node replacement and scale-in use fixed internal waits the provider does not yet expose (provider issue #796)."
+  description = "OPTIONAL: Provider-level cap (in minutes, 5-240) on how long cluster creation and scale-out wait for the boot-time provisioner to report completion, measured from the provisioner VM's launch -- so it includes any time the VMs spend in pre_run hooks. Passed to the qumulo provider's azure.provisioning_timeout_minutes; null keeps the provider default of 30. Independent of the provider_*_timeout_minutes operation timeouts above, which bound the whole apply step from the outside: an environment whose platform automation holds new VMs for long needs both raised. Node replacement and scale-in are bounded by fixed provider-side status waits of 45 and 15 minutes that are not exposed; their cluster-side waits follow cluster_stall_window."
   type        = number
   default     = null
   nullable    = true

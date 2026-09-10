@@ -76,6 +76,9 @@ tags = {
 # provisioning_timeout_minutes    - (OPTIONAL) Provider-level cap (5-240 minutes) on how long create and scale-out wait for the boot-time provisioner to
 #                                    report completion, counted from the provisioner VM's launch, so it includes time spent in pre_run hooks. Null = the
 #                                    provider default of 30. Raise it together with the provider_*_timeout_minutes values when platform automation holds new VMs.
+# cluster_stall_window           - (OPTIONAL) How long a node addition, removal, or replacement may show no cluster activity (quorum, membership,
+#                                    restriper) before the provisioner gives up, e.g. "20m", "45m", "2h". Null = the provider default of 20m. Bounds silence,
+#                                    not work: an operation that keeps progressing runs as long as it needs. Provider 1.4.14 or later.
 # storage_class                  - (OPTIONAL) HOT cluster default is INTELLIGENT_TIERING, or override to STANDARD.
 # storage_replication_type       - (OPTIONAL) Azure storage replication type (immutable after creation). LRS or ZRS.
 # soft_capacity_limit_tb         - (OPTIONAL) Soft capacity limit in TB (50 to 10000). Default is 500TB. Can be increased to add storage, but cannot be decreased.  It's like a quota, unused capacity is not billed.
@@ -97,6 +100,7 @@ provider_create_timeout_minutes = null
 provider_update_timeout_minutes = null
 provider_delete_timeout_minutes = null
 provisioning_timeout_minutes    = null
+cluster_stall_window            = null
 storage_class                   = null
 storage_replication_type        = null
 soft_capacity_limit_tb          = 100
