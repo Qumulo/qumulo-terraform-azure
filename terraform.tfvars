@@ -108,6 +108,7 @@ soft_capacity_limit_tb          = 100
 #                           The included hooks/wait-for-rhel-entitlement.sh (as pre_run_file) blocks RHEL BYOS node boot until subscription content is available; see hooks/readme.md.
 # provisioner_hooks_files - OPTIONAL: Advanced use only.  Hooks run pre-deploy or post-cluster-formation on the provisioner.  override_file completely replaces the boot script. Executed on every boot cycle.  See the docs.
 # hooks_apply_watch       - OPTIONAL: While hooks are wired, print their "[<hook_name>] ..." serial-console lines into the apply output (needs the az CLI). Default = true.
+# hooks_watch_shell       - OPTIONAL: Shell for that watch: "bash" (Linux, macOS), "powershell" or "pwsh" (Windows). Null = powershell on Windows, bash elsewhere.
 node_hooks_files = {
   pre_run_file  = null
   post_run_file = null
@@ -121,6 +122,7 @@ provisioner_hooks_files = {
 }
 
 hooks_apply_watch = true
+hooks_watch_shell = null
 
 # ****************************** OPTIONAL ADVANCED SETTINGS *****************************
 # disable_appconfig_public_network_access - (OPTIONAL) Disable public network access to the App Configuration instance the provider creates.
