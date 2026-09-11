@@ -50,6 +50,17 @@ output "primary_ips" {
   value       = qumulo_filesystem_azure.cluster.primary_ips
 }
 
+output "provisioner_log_url" {
+  description = "Azure portal deep link to this deployment's provisioner log workspace (table QumuloProvisioner_CL, 30-day retention). Opens the workspace's Logs blade, not the log content directly -- unlike CloudWatch, Log Analytics is query-first: the portal may first show a \"Queries hub\" gallery, which must be dismissed (its close/X control) to reach the query editor, where running `QumuloProvisioner_CL | order by TimeGenerated asc | project TimeGenerated, RawData` displays the log. The provisioner VM is deleted after the operation completes, so this workspace is the only place the log survives; tools/get-provisioner-log.sh/.ps1 run that same query via the CLI and write the result straight to a text file, skipping the portal UI entirely."
+  value = format(
+    "https://%s/#resource/subscriptions/%s/resourceGroups/%s/providers/Microsoft.OperationalInsights/workspaces/%s/logs",
+    var.azure_environment == "usgovernment" ? "portal.azure.us" : "portal.azure.com",
+    var.azure_subscription_id,
+    local.resource_group_unique_name,
+    "${qumulo_filesystem_azure.cluster.deployment_unique_name}-logs",
+  )
+}
+
 output "soft_capacity_limit_tb" {
   description = "Total capacity the cluster may consume.  Only used capacity is billed."
   value       = qumulo_filesystem_azure.cluster.soft_capacity_limit_tb
