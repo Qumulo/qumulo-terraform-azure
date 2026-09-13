@@ -594,7 +594,7 @@ variable "resource_group_name" {
 }
 
 variable "running_cluster_version" {
-  description = "OPTIONAL: Qumulo Core version the cluster runs now, when in-cluster upgrades have moved it past the recorded cluster_version (which never changes after create or import). Read from the cluster UI or `GET /v1/version`. Consulted only by the Azure v4 VM guard, which refuses a v4 vm_type below Core 7.8.0.1."
+  description = "OPTIONAL: Qumulo Core version the cluster runs now, read from the cluster UI or `GET /v1/version`. Consulted only by the Azure v4 VM guard, which refuses a v4 vm_type below Core 7.8.0.1. Without it the guard compares the recorded cluster_version, which never changes after create or import and is therefore a lower bound on what the cluster runs: the guard may refuse a v4 size the cluster could take until you set this, but cannot approve one it cannot, except for an import pinned above the real version."
   type        = string
   default     = null
   nullable    = true
