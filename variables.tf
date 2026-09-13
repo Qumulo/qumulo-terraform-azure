@@ -326,7 +326,7 @@ variable "hooks_apply_watch" {
 }
 
 variable "initial_cluster_version" {
-  description = "OPTIONAL: Qumulo Core version to install when the cluster is created; null installs the latest release. This is the cluster's birth record, not an upgrade lever: the provider never upgrades a cluster, the value cannot change after creation, and an in-cluster upgrade does not update it. Upgrade with the Qumulo UI, qq, or the cluster REST API and leave this value alone. On import, set it to the version the cluster runs so the record is true. Replaces cluster_version."
+  description = "OPTIONAL: Qumulo Core version to install when the cluster is created; null installs the latest release. This is the cluster's birth record, not an upgrade lever: the provider never upgrades a cluster, the value cannot change after creation, and an in-cluster upgrade does not update it. Upgrade with the Qumulo UI, qq, or the cluster REST API and leave this value alone. On import, set it to the version the cluster runs so the record is true — this matters: when storage_class is null, the provider derives the storage tier FROM this version at import (7.8.4 or later selects INTELLIGENT_TIERING), so a wrong or omitted value records the wrong tier for the cluster. Replaces cluster_version."
   type        = string
   default     = null
   nullable    = true
