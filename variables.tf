@@ -325,6 +325,18 @@ variable "hooks_apply_watch" {
   default     = true
 }
 
+variable "hooks_watch_shell" {
+  description = "OPTIONAL: Which shell runs the apply-side hook watch (see hooks_apply_watch): \"bash\" on Linux and macOS, \"powershell\" (Windows PowerShell 5.1) or \"pwsh\" (PowerShell 7) on Windows. Null picks powershell when Terraform runs on Windows and bash otherwise."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.hooks_watch_shell == null || contains(["bash", "powershell", "pwsh"], var.hooks_watch_shell)
+    error_message = "hooks_watch_shell must be \"bash\", \"powershell\", \"pwsh\", or null for automatic selection."
+  }
+}
+
 variable "key_vault_id" {
   description = "OPTIONAL: Full Azure resource ID of a customer-managed Key Vault. If omitted, the provider creates one."
   type        = string

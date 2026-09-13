@@ -8,10 +8,25 @@
 #once when every node already exists (a no-op apply, or an update that boots no VM).
 #The script always exits 0 -- the watch can never fail a deploy.
 
+# The watch scripts exist as bash (Linux, macOS) and PowerShell (Windows) editions.
+# hooks_watch_shell picks one; null detects Windows by its system directory, which no
+# other platform has, and otherwise uses bash.
+locals {
+  hook_watch_shell = coalesce(var.hooks_watch_shell, fileexists("C:/Windows/System32/cmd.exe") ? "powershell" : "bash")
+  hook_watch_programs = {
+    bash       = { count = ["bash", "${path.module}/tools/hooks/count-vms.sh"], interpreter = ["bash"], script = "${path.module}/tools/hooks/apply-hook-watch.sh" }
+    pwsh       = { count = ["pwsh", "-NoProfile", "-NonInteractive", "-File", "${path.module}/tools/hooks/count-vms.ps1"], interpreter = ["pwsh", "-NoProfile", "-NonInteractive", "-File"], script = "${path.module}/tools/hooks/apply-hook-watch.ps1" }
+    powershell = { count = ["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", "${path.module}/tools/hooks/count-vms.ps1"], interpreter = ["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File"], script = "${path.module}/tools/hooks/apply-hook-watch.ps1" }
+  }
+  hook_watch_count_program = local.hook_watch_programs[local.hook_watch_shell].count
+  hook_watch_interpreter   = local.hook_watch_programs[local.hook_watch_shell].interpreter
+  hook_watch_script        = local.hook_watch_programs[local.hook_watch_shell].script
+}
+
 data "external" "deployment_vms" {
   count = var.hooks_apply_watch && length(local.hook_watch_tags) > 0 ? 1 : 0
 
-  program = ["bash", "${path.module}/tools/hooks/count-vms.sh"]
+  program = local.hook_watch_count_program
   query   = { resource_group = local.resource_group_unique_name }
 }
 
@@ -21,7 +36,8 @@ resource "terraform_data" "hook_watch" {
   triggers_replace = [plantimestamp()]
 
   provisioner "local-exec" {
-    command = "bash '${path.module}/tools/hooks/apply-hook-watch.sh'"
+    interpreter = local.hook_watch_interpreter
+    command     = local.hook_watch_script
     environment = {
       WATCH_RG           = local.resource_group_unique_name
       WATCH_TAGS         = join("|", local.hook_watch_tags)
