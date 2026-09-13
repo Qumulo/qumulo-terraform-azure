@@ -67,6 +67,8 @@ tags = {
 # deletion_protection            - Protects the cluster's VMs and storage accounts from deletion with CanNotDelete management locks. Default = true. Set to false to destroy.
 # cluster_uuid                   - (OPTIONAL) UUID of an existing cluster to import/adopt. Leave null for new deployments.
 # cluster_version                - (OPTIONAL) Qumulo software version. Defaults to latest. Immutable after creation. Upgrade version via cluster UI/API.
+# running_cluster_version        - (OPTIONAL) Core version the cluster runs now, once upgrades have passed the recorded cluster_version. Only the
+#                                    Azure v4 VM guard reads it (v4 sizes need Core 7.8.0.1+).
 # floating_ip_count              - (OPTIONAL) Number of floating IPs to assign to the cluster. Must be 0, or between 3 and 100. Requires networking_mode "host_managed". Default=3.
 # nexus_registration_key         - (OPTIONAL, Deprecated) Qumulo Nexus registration key for remote support. Obtain from https://nexus.qumulo.com/user/registration-key. Ignored if nexus_api_token is set (see OPTIONAL ADVANCED SETTINGS below).
 # provider_timeout_minutes       - (OPTIONAL) The default timeout, in minutes, applied to any of create/update/delete not overridden individually below. Default is 30 minutes.
@@ -90,6 +92,7 @@ deletion_protection             = true
 #------------OPTIONAL------------------
 cluster_uuid                    = null
 cluster_version                 = null
+running_cluster_version         = null
 floating_ip_count               = 3
 nexus_registration_key          = null
 provider_timeout_minutes        = 30

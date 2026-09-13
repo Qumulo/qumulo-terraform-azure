@@ -593,6 +593,18 @@ variable "resource_group_name" {
   }
 }
 
+variable "running_cluster_version" {
+  description = "OPTIONAL: Qumulo Core version the cluster runs now, when in-cluster upgrades have moved it past the recorded cluster_version (which never changes after create or import). Read from the cluster UI or `GET /v1/version`. Consulted only by the Azure v4 VM guard, which refuses a v4 vm_type below Core 7.8.0.1."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.running_cluster_version == null || can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?$", var.running_cluster_version))
+    error_message = "running_cluster_version must be a Qumulo Core version such as \"7.8.0.4\" or \"7.9.3.1\", or null."
+  }
+}
+
 variable "soft_capacity_limit_tb" {
   description = "OPTIONAL: Soft capacity limit in TB (50 to 10000). Default is 500TB. Can be increased to add storage, but cannot be decreased. It's like a quota, unused capacity is not billed."
   type        = number
@@ -645,7 +657,7 @@ variable "tags" {
 }
 
 variable "vm_type" {
-  description = "Azure VM size for cluster nodes. Only L-series storage-optimized VMs are supported (e.g. Standard_L8s_v4)."
+  description = "Azure VM size for cluster nodes. Only L-series storage-optimized VMs are supported (e.g. Standard_L8s_v4). v4 sizes (Lsv4, Lasv4, Laosv4) need Qumulo Core 7.8.0.1 or later on the cluster; see running_cluster_version."
   type        = string
   nullable    = false
 }

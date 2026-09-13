@@ -92,6 +92,29 @@ locals {
   cluster_version_key           = try(join(".", formatlist("%05d", slice(split(".", qumulo_filesystem_azure.cluster.cluster_version), 0, 3))), null)
 }
 
+# Azure v4 sizes (Lsv4, Lasv4, Laosv4) present every disk over NVMe. Qumulo Core below 7.8.0.1
+# classifies them all as plain SSD, puts DKV on the ephemeral local drives and builds no write
+# cache (QFS-125022). The version compared is the one the cluster runs: Terraform's recorded
+# cluster_version never changes after create or import, so running_cluster_version overrides it
+# once in-cluster upgrades have moved on. Four-component sort keys so 7.8.0.1 > 7.8.0.
+locals {
+  v4_vm_type              = can(regex("^Standard_L[0-9]+a?o?s_v4$", var.vm_type))
+  v4_core_floor           = "7.8.0.1"
+  v4_core_floor_key       = join(".", formatlist("%05d", slice(concat(split(".", local.v4_core_floor), ["0", "0", "0"]), 0, 4)))
+  v4_running_version      = try(coalesce(var.running_cluster_version, qumulo_filesystem_azure.cluster.cluster_version), null)
+  v4_running_version_key  = try(join(".", formatlist("%05d", slice(concat(split(".", local.v4_running_version), ["0", "0", "0"]), 0, 4))), null)
+  v4_running_version_okay = local.v4_running_version_key == null || sort([local.v4_running_version_key, local.v4_core_floor_key])[0] == local.v4_core_floor_key
+}
+
+resource "terraform_data" "v4_core_floor" {
+  lifecycle {
+    precondition {
+      condition     = !local.v4_vm_type || local.v4_running_version_okay
+      error_message = "vm_type ${var.vm_type} is an Azure v4 size and Qumulo Core ${coalesce(local.v4_running_version, "unknown")} is below ${local.v4_core_floor}. Before 7.8.0.1 Core misclassifies v4 NVMe disks: DKV lands on the ephemeral local drives and the cluster gets no write cache (QFS-125022). Upgrade the cluster first. If it already runs ${local.v4_core_floor} or later and only Terraform's recorded cluster_version is behind, set running_cluster_version to the version the cluster reports."
+    }
+  }
+}
+
 check "floating_ip_reconciler_scope" {
   assert {
     condition = (
