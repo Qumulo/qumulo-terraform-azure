@@ -36,7 +36,7 @@ module "cloud_native_qumulo" {
   deletion_protection             = true
 
   #------------OPTIONAL------------------
-  cluster_version          = null
+  initial_cluster_version          = null
   floating_ip_count        = 3
   nexus_registration_key   = null
   provider_timeout_minutes = 30

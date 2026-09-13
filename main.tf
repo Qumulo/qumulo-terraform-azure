@@ -124,7 +124,7 @@ resource "qumulo_filesystem_azure" "cluster" {
   cluster_node_identity_id                = var.cluster_node_identity_id
   cluster_product_type                    = var.cluster_product_type
   cluster_uuid                            = var.cluster_uuid
-  cluster_version                         = var.cluster_version
+  cluster_version                         = try(coalesce(var.initial_cluster_version, var.cluster_version), null)
   custom_image_id                         = var.custom_image_id
   deletion_protection                     = var.deletion_protection
   deployment_name                         = var.deployment_name

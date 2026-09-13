@@ -183,7 +183,7 @@ variable "cluster_uuid" {
 }
 
 variable "cluster_version" {
-  description = "OPTIONAL: Qumulo software version. Defaults to latest. Immutable after creation. Upgrade version via cluster UI/API."
+  description = "DEPRECATED: use initial_cluster_version. Same meaning; kept so existing configurations keep working. Setting both is an error."
   type        = string
   default     = null
   nullable    = true
@@ -323,6 +323,18 @@ variable "hooks_apply_watch" {
   description = "OPTIONAL: While a hook is wired, tail the VMs' boot-diagnostics serial logs during `terraform apply` and print the hooks' \"[<hook_name>] ...\" lines into the apply output (needs the az CLI; see hooks-watch.tf). Set false to opt out."
   type        = bool
   default     = true
+}
+
+variable "initial_cluster_version" {
+  description = "OPTIONAL: Qumulo Core version to install when the cluster is created; null installs the latest release. This is the cluster's birth record, not an upgrade lever: the provider never upgrades a cluster, the value cannot change after creation, and an in-cluster upgrade does not update it. Upgrade with the Qumulo UI, qq, or the cluster REST API and leave this value alone. On import, set it to the version the cluster runs so the record is true. Replaces cluster_version."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.initial_cluster_version == null || var.cluster_version == null
+    error_message = "Set initial_cluster_version or the deprecated cluster_version, not both."
+  }
 }
 
 variable "key_vault_id" {
