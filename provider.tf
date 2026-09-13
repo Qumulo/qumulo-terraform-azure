@@ -31,6 +31,7 @@ provider "azurerm" {
   features {}
 
   subscription_id = var.azure_subscription_id
+  environment     = var.azure_environment
 }
 
 # Aliased provider for private DNS zone record writes. Zones commonly live in a
@@ -42,13 +43,16 @@ provider "azurerm" {
   features {}
 
   subscription_id = local.dns_zone_subscription_id != null ? local.dns_zone_subscription_id : var.azure_subscription_id
+  environment     = var.azure_environment
 }
 
 # azapi performs the post-deployment public-network-access PATCHes on resources
 # the qumulo provider created (azurerm cannot manage resources it did not
 # create). Same default ARM credential chain; resources are addressed by
 # absolute ID, so no subscription pin is needed.
-provider "azapi" {}
+provider "azapi" {
+  environment = var.azure_environment
+}
 
 provider "qumulo" {
   # OPTIONAL: auto-mints the deprecated per-cluster nexus_registration_key and onboards new
