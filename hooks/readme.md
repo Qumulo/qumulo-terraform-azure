@@ -109,9 +109,10 @@ Provider 1.4.14 replaced the fixed 10-minute membership wait that failed node
 replacements (provider issue #796) with progress-based waits: once the new VMs
 have booted, a node addition, removal, or replacement fails only after the
 cluster has shown no change in quorum, membership, or restriper state for
-`cluster_stall_window` (default 20m). The hooks do not touch that window. The
-provisioner waits without limit for every node VM to answer before those
-cluster waits start, so time spent in node hooks is bounded only by the
-provider-side waits: `provisioning_timeout_minutes` for create and scale-out,
-fixed 45- and 15-minute status waits for replacement and scale-in, and the
-`provider_*_timeout_minutes` around the whole apply.
+`cluster_stall_window` (default 20m). The hooks do not touch that window.
+Since provider 1.4.15 there are no separate provider-side status waits: the
+provisioner waits for every node VM to answer, cluster-side progress is
+bounded by `cluster_stall_window`, and everything else — including time spent
+in node hooks — sits inside the operation timeout (`provider_timeout_minutes`
+or its per-operation overrides), which is therefore the value to size for the
+platform's worst case.
