@@ -277,13 +277,15 @@ variable "deployment_name" {
 variable "disable_appconfig_public_network_access" {
   description = "LEGACY: Disable public network access to the App Configuration instance the provider creates. Requires private_link_appconfig_dns_zone_id. Superseded by the create_*_private_endpoint variables + disable_public_network_access_post_deploy."
   type        = bool
-  default     = false
+  default     = null
+  nullable    = true
 }
 
 variable "disable_keyvault_public_network_access" {
-  description = "LEGACY: Disable public network access to the Key Vault the provider creates or uses. Requires private_link_keyvault_dns_zone_id. Superseded by the create_*_private_endpoint variables + disable_public_network_access_post_deploy."
+  description = "LEGACY: Disable public network access to the Key Vault the provider creates. Requires private_link_keyvault_dns_zone_id. Superseded by the create_*_private_endpoint variables + disable_public_network_access_post_deploy."
   type        = bool
-  default     = false
+  default     = null
+  nullable    = true
 }
 
 variable "disable_public_network_access_post_deploy" {

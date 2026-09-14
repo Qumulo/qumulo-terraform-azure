@@ -124,7 +124,7 @@ hooks_apply_watch = true
 
 # ****************************** OPTIONAL ADVANCED SETTINGS *****************************
 # disable_appconfig_public_network_access - (OPTIONAL) Disable public network access to the App Configuration instance the provider creates.
-# disable_keyvault_public_network_access  - (OPTIONAL) Disable public network access to the Key Vault the provider creates or uses.
+# disable_keyvault_public_network_access  - (OPTIONAL) Disable public network access to the Key Vault the provider creates.
 # networking_mode                         - (OPTIONAL) Network management mode for cluster nodes ("host_managed" default or "qumulo_managed").
 # nsg_allow_ingress_icmp                  - (OPTIONAL) Enable ICMP ingress in the NSG rules the provider creates, for network diagnostics.
 # persistent_storage_resource_group       - (OPTIONAL) Resource group containing persistent storage accounts and Key Vault, if different from resource_group_name.
@@ -135,18 +135,18 @@ hooks_apply_watch = true
 # naming                                  - (OPTIONAL) Custom naming templates for Azure resources.
 # nexus_api_token                         - (OPTIONAL) Qumulo Nexus API token (provider-level). When set, auto-mints nexus_registration_key and onboards to Nexus Fleet automatically.
 # nexus_account_id                        - (OPTIONAL) Qumulo Nexus organization ID (provider-level). Only relevant when nexus_api_token is set; omit to auto-resolve from the token.
-disable_appconfig_public_network_access = false
-disable_keyvault_public_network_access  = false
-networking_mode                         = null
-nsg_allow_ingress_icmp                  = false
-persistent_storage_resource_group       = null
-private_link_appconfig_dns_zone_id      = null
-private_link_keyvault_dns_zone_id       = null
-marketplace_image                       = null
-provisioner_marketplace_image           = null
-naming                                  = null
-nexus_api_token                         = null
-nexus_account_id                        = null
+# disable_appconfig_public_network_access = true
+# disable_keyvault_public_network_access  = true
+networking_mode                    = null
+nsg_allow_ingress_icmp             = false
+persistent_storage_resource_group  = null
+private_link_appconfig_dns_zone_id = null
+private_link_keyvault_dns_zone_id  = null
+marketplace_image                  = null
+provisioner_marketplace_image      = null
+naming                             = null
+nexus_api_token                    = null
+nexus_account_id                   = null
 
 # ***** OPTIONAL Cluster DNS *****
 # cluster_fqdn - For clusters that want Qumulo Core to answer DNS queries directly with floating IPs (no separate DNS forwarder needed, unlike the AWS Route 53 Resolver pattern).
