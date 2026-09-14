@@ -103,7 +103,7 @@ variable "availability_zones" {
 }
 
 variable "azure_environment" {
-  description = "OPTIONAL: Azure cloud environment for the qumulo provider."
+  description = "OPTIONAL: Azure cloud environment (\"public\" or \"usgovernment\") for the qumulo, azurerm, and azapi providers."
   type        = string
   default     = "public"
   nullable    = false
