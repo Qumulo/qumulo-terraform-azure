@@ -583,7 +583,7 @@ variable "provisioner_vm_type" {
 }
 
 variable "provisioning_timeout_minutes" {
-  description = "OPTIONAL, DEPRECATED: ignored by provider 1.4.15 and later, which bound create, scale, and replacement only by the operation timeouts (provider_timeout_minutes and the per-operation provider_*_timeout_minutes overrides) plus cluster_stall_window for cluster-side stalls. Still passed through for configuration compatibility; remove it from configurations and size provider_timeout_minutes for the platform's worst case instead (it must cover any time new VMs spend held by platform automation or pre_run hooks)."
+  description = "OPTIONAL, DEPRECATED: ignored by provider 1.4.15 and later, which bound create, scale, and replacement only by the operation timeouts (provider_timeout_minutes and the per-operation provider_*_timeout_minutes overrides) plus cluster_stall_window for cluster-side stalls. Still passed through for configuration compatibility; setting it on 1.4.15+ produces a deprecation warning at every plan, so leave it null. Remove it from configurations and size provider_timeout_minutes for the platform's worst case instead (it must cover any time new VMs spend held by platform automation or pre_run hooks)."
   type        = number
   default     = null
   nullable    = true
