@@ -98,7 +98,7 @@ check "floating_ip_reconciler_scope" {
       local.cluster_version_key == null ||
       sort([local.cluster_version_key, local.fip_min_version_key])[0] == local.fip_min_version_key
     )
-    error_message = "Qumulo Core ${qumulo_filesystem_azure.cluster.cluster_version} is below ${local.fip_reconciler_scoped_version}. On these versions the floating-IP reconciler strips secondary IP configurations from every NIC in resource group '${var.resource_group_name}' that it does not recognize as a cluster node. Keep this resource group dedicated to this deployment: no other clusters and no other VMs."
+    error_message = "Qumulo Core ${coalesce(qumulo_filesystem_azure.cluster.cluster_version, "(unknown)")} is below ${local.fip_reconciler_scoped_version}. On these versions the floating-IP reconciler strips secondary IP configurations from every NIC in resource group '${var.resource_group_name}' that it does not recognize as a cluster node. Keep this resource group dedicated to this deployment: no other clusters and no other VMs."
   }
 }
 
