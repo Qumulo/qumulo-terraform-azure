@@ -104,3 +104,15 @@ create timeout. With the 30-minute default, a node replacement whose new nodes
 each waited about five minutes ran out of time during the provider's final
 read, and Terraform reported the apply as failed although the replacement had
 completed.
+
+Provider 1.4.14 replaced the fixed 10-minute membership wait that failed node
+replacements (provider issue #796) with progress-based waits: once the new VMs
+have booted, a node addition, removal, or replacement fails only after the
+cluster has shown no change in quorum, membership, or restriper state for
+`cluster_stall_window` (default 20m). The hooks do not touch that window.
+Since provider 1.4.15 there are no separate provider-side status waits: the
+provisioner waits for every node VM to answer, cluster-side progress is
+bounded by `cluster_stall_window`, and everything else — including time spent
+in node hooks — sits inside the operation timeout (`provider_timeout_minutes`
+or its per-operation overrides), which is therefore the value to size for the
+platform's worst case.

@@ -60,6 +60,10 @@ provider "qumulo" {
   nexus_api_token  = var.nexus_api_token
   nexus_account_id = var.nexus_account_id
 
+  # How long a node addition, removal, or replacement may show no cluster activity before the
+  # provisioner gives up on it. Null keeps the provider default of 20m.
+  cluster_stall_window = var.cluster_stall_window
+
   azure {
     # Standard Azure credential chain applies (env vars, Azure CLI, managed
     # identity). No explicit credentials are required here.
