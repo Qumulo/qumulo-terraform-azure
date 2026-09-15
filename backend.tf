@@ -14,5 +14,6 @@ terraform {
     container_name       = "tf-state"
     key                  = "cnq/terraform.tfstate"
     use_azuread_auth     = true
+    environment          = "public" # "usgovernment" for Azure Government
   }
 }
