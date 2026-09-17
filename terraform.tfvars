@@ -126,6 +126,8 @@ provisioner_hooks_files = {
 hooks_apply_watch = true
 
 # ****************************** OPTIONAL ADVANCED SETTINGS *****************************
+# adoption_guard                          - (OPTIONAL) Warn at plan when node_count, vm_type or availability_zones differ from the node VMs already in the
+#                                    resource group (adopting an existing cluster). Warning only.
 # disable_appconfig_public_network_access - (OPTIONAL) Disable public network access to the App Configuration instance the provider creates.
 # disable_keyvault_public_network_access  - (OPTIONAL) Disable public network access to the Key Vault the provider creates.
 # networking_mode                         - (OPTIONAL) Network management mode for cluster nodes ("host_managed" default or "qumulo_managed").
@@ -138,6 +140,7 @@ hooks_apply_watch = true
 # naming                                  - (OPTIONAL) Custom naming templates for Azure resources.
 # nexus_api_token                         - (OPTIONAL) Qumulo Nexus API token (provider-level). When set, auto-mints nexus_registration_key and onboards to Nexus Fleet automatically.
 # nexus_account_id                        - (OPTIONAL) Qumulo Nexus organization ID (provider-level). Only relevant when nexus_api_token is set; omit to auto-resolve from the token.
+# adoption_guard                          = true
 # disable_appconfig_public_network_access = true
 # disable_keyvault_public_network_access  = true
 networking_mode                    = null

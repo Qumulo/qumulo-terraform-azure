@@ -26,6 +26,12 @@
 #ephemeral values are only permitted in write-only resource arguments, not in the `name`/`count`
 #style arguments this module's Key Vault resolution depends on. sensitive = true already keeps it
 #out of logs/plan output and satisfies the provider's write-only admin_password argument.
+variable "adoption_guard" {
+  description = "OPTIONAL: Compare node_count, vm_type and availability_zones against the node VMs already in resource_group_name at plan time and warn when they differ. For adopting an existing cluster: the provider rebuilds or scales the fleet on such a difference while the plan shows an in-place change. Warning only; needs Microsoft.Compute/virtualMachines/read on the resource group."
+  type        = bool
+  default     = false
+}
+
 variable "admin_pwd_or_keyvault_secret_id" {
   type        = string
   sensitive   = true
