@@ -127,6 +127,7 @@ resource "azurerm_role_definition" "deployer" {
         "Microsoft.Resources/subscriptions/resourceGroups/write",
 
         "Microsoft.Compute/virtualMachines/read",
+        "Microsoft.Compute/sshPublicKeys/read",
         "Microsoft.Compute/virtualMachines/write",
         "Microsoft.Compute/virtualMachines/delete",
         "Microsoft.Compute/virtualMachines/extensions/write",
@@ -422,6 +423,19 @@ resource "azurerm_role_assignment" "deployer_customer_key_vault_reader" {
   count = var.key_vault_id != null && !local.customer_key_vault_rbac ? 1 : 0
 
   scope                            = var.key_vault_id
+  role_definition_name             = "Reader"
+  principal_id                     = local.deployer_principal_id
+  principal_type                   = local.deployer_principal_type
+  skip_service_principal_aad_check = local.create_deployer_identity
+}
+
+#The wrapper reads the SSH key at plan time, which fails before anything is created
+#when the deployer cannot see it. Reader on the key resource itself covers a key kept
+#outside the deployment's resource groups.
+resource "azurerm_role_assignment" "deployer_ssh_public_key" {
+  count = var.ssh_public_key_id == null ? 0 : 1
+
+  scope                            = var.ssh_public_key_id
   role_definition_name             = "Reader"
   principal_id                     = local.deployer_principal_id
   principal_type                   = local.deployer_principal_type

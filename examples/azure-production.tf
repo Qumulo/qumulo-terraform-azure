@@ -18,9 +18,9 @@ module "cloud_native_qumulo_production" {
   #------------OPTIONAL------------------
   # Restrict to known client/management networks -- do not leave this null (which defaults to the
   # whole subnet's address prefixes) for a production cluster.
-  allow_cidrs         = ["10.0.1.0/24", "10.0.2.0/24"]
-  availability_zones  = ["1", "2", "3"]
-  ssh_public_key_path = "~/.ssh/id_rsa.pub"
+  allow_cidrs        = ["10.0.1.0/24", "10.0.2.0/24"]
+  availability_zones = ["1", "2", "3"]
+  ssh_public_key_id  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-keys-rg/providers/Microsoft.Compute/sshPublicKeys/my-ssh-key"
   tags = {
     owner        = "owner"
     department   = "department"

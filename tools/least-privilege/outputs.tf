@@ -44,5 +44,6 @@ output "wrapper_tfvars" {
       provisioner_identity_id  = azurerm_user_assigned_identity.provisioner.id
     },
     var.key_vault_id == null ? {} : { key_vault_id = var.key_vault_id },
+    var.ssh_public_key_id == null ? {} : { ssh_public_key_id = var.ssh_public_key_id },
   )
 }

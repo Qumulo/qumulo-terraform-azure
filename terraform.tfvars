@@ -19,9 +19,12 @@
 # provisioner_custom_image_id   - (OPTIONAL) Custom VM image resource ID for the provisioner instance. Defaults to the default Qumulo image.
 # provisioner_identity_id       - (OPTIONAL) Resource ID of a user-assigned managed identity for the provisioner VM. If omitted, the provider creates one.
 # provisioner_vm_type           - (OPTIONAL) Azure VM size for the provisioner instance (used during deploy operations). Defaults to the provider's built-in default.
-# ssh_public_key_path           - (OPTIONAL) Path to a local SSH public key file for SSH access to cluster nodes. ie: "~/.ssh/id_rsa.pub"
+# ssh_public_key_id             - (REQUIRED unless ssh_public_key_path) Resource ID of the Azure SSH key (Microsoft.Compute/sshPublicKeys) installed on the cluster nodes.
+# ssh_public_key_path           - (LEGACY) Path to a local SSH public key file; prefer ssh_public_key_id. ie: "~/.ssh/id_rsa.pub"
 # tags                          - (OPTIONAL) Tags to apply to all Azure resources created for this cluster.
 #subnet_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-network-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"
+#ssh_public_key_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-keys-rg/providers/Microsoft.Compute/sshPublicKeys/my-ssh-key"
+# ssh_public_key_path = "~/.ssh/id_rsa.pub"   # legacy alternative to ssh_public_key_id
 
 #-----------REQUIRED-------------------
 deployment_name       = "my-deployment"
@@ -41,7 +44,6 @@ key_vault_id                = null
 provisioner_custom_image_id = null
 provisioner_identity_id     = null
 provisioner_vm_type         = null
-ssh_public_key_path         = null
 tags = {
   owner      = "smith"
   department = "it"

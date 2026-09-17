@@ -85,6 +85,16 @@ variable "key_vault_id" {
   default     = null
 }
 
+variable "ssh_public_key_id" {
+  description = "OPTIONAL: Resource ID of the Azure SSH key the wrapper's ssh_public_key_id will name. The deployer gets Reader on it, so the wrapper's plan can read the public key wherever the key lives."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.ssh_public_key_id == null || can(regex("^/subscriptions/[0-9a-fA-F-]+/resourceGroups/[^/]+/providers/Microsoft\\.Compute/sshPublicKeys/[^/]+$", var.ssh_public_key_id))
+    error_message = "ssh_public_key_id must be the resource ID of an Azure SSH key: /subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Compute/sshPublicKeys/<name>."
+  }
+}
+
 variable "custom_image_id" {
   description = "OPTIONAL: Custom VM image resource ID for cluster nodes (the wrapper's custom_image_id). The deployer is granted Reader on the image (for a Compute Gallery image, on the whole gallery) so VMs can be created from it and from later images in the same gallery."
   type        = string

@@ -8,6 +8,7 @@ module "cloud_native_qumulo" {
   subnet_id             = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-network-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"
   vm_type               = "Standard_L8s_v4"
   azure_subscription_id = "00000000-0000-0000-0000-000000000000"
+  ssh_public_key_id     = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-keys-rg/providers/Microsoft.Compute/sshPublicKeys/my-ssh-key"
 
   #------------OPTIONAL------------------
   allow_cidrs                 = null
@@ -19,7 +20,6 @@ module "cloud_native_qumulo" {
   provisioner_custom_image_id = null
   provisioner_identity_id     = null
   provisioner_vm_type         = null
-  ssh_public_key_path         = null
   tags = {
     owner        = "owner"
     department   = "department"
