@@ -21,6 +21,8 @@
 #SOFTWARE.
 
 terraform {
+  # 1.11 is the first Terraform with write-only attributes. The provider's
+  # nexus_registration_key is one, and main.tf passes it through.
   required_version = ">= 1.11.0"
 
   required_providers {
