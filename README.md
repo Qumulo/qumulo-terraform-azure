@@ -41,6 +41,7 @@ module "cloud_native_qumulo" {
   subnet_id             = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-network-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"
   vm_type                = "Standard_L8s_v4"
   azure_subscription_id = "00000000-0000-0000-0000-000000000000"
+  ssh_public_key_id     = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-keys-rg/providers/Microsoft.Compute/sshPublicKeys/my-ssh-key"
 
   #------------OPTIONAL------------------
   allow_cidrs                 = null
@@ -52,7 +53,6 @@ module "cloud_native_qumulo" {
   provisioner_custom_image_id = null
   provisioner_identity_id     = null
   provisioner_vm_type         = null
-  ssh_public_key_path         = null
   tags = {
     owner        = "owner"
     department   = "department"
@@ -84,6 +84,34 @@ output "outputs_cloud_native_qumulo" {
 ```
 
 ---
+
+## SSH access to cluster nodes
+
+Every node VM has a `qumulo` login, and the provider installs the SSH public key you supply on it. The key is installed only on nodes the provider creates, so set it before the first apply, or before a node replacement, for the key to land on those nodes.
+
+Supply the public key as an Azure SSH key resource (`Microsoft.Compute/sshPublicKeys`), the public key Azure stores for you, through `ssh_public_key_id`. This is the counterpart of `ec2_key_pair` in the AWS wrapper: the cloud holds the public key, and the private key stays wherever you keep it. Azure never stores the private key. The older `ssh_public_key_path`, a public key file on the host running Terraform, remains for configurations that already use it. One of the two is required: a plan with neither is refused, so no node is ever built without a key.
+
+### Using an Azure SSH key
+
+Generate a new key pair, which saves the private key on your machine:
+
+```sh
+az sshkey create --name <name> --resource-group <rg>
+```
+
+Or register a public key you already have:
+
+```sh
+az sshkey create --name <name> --resource-group <rg> --public-key "@~/.ssh/id_rsa.pub"
+```
+
+The Azure portal offers both under **SSH keys**. Then point the wrapper at the resource:
+
+```hcl
+ssh_public_key_id = "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Compute/sshPublicKeys/<name>"
+```
+
+`az sshkey show --name <name> --resource-group <rg> --query id -o tsv` prints the ID. The key must be in `azure_subscription_id`, and the identity running Terraform needs `Microsoft.Compute/sshPublicKeys/read` on it: the Reader role carries it, and `tools/least-privilege` grants the deployer Reader on the key when you pass it the same `ssh_public_key_id`. Terraform reads the key during `plan`, so a missing grant fails the plan before anything is created, with Azure's `AuthorizationFailed` naming the action and the key. If your team keeps private keys in Azure Key Vault, store it there as a secret with `az keyvault secret set --file`; that is also the form Azure Bastion reads for Key Vault logins. Log in with `ssh -i <private key> qumulo@<node-ip>`.
 
 ## Private networking (post-deployment)
 
@@ -235,7 +263,8 @@ endpoint until you do.
 | <a name="input_provisioning_timeout_minutes"></a> [provisioning\_timeout\_minutes](#input\_provisioning\_timeout\_minutes) | OPTIONAL, DEPRECATED: ignored by provider 1.4.15 and later, which bound create, scale, and replacement only by the operation timeouts (provider\_timeout\_minutes and the per-operation provider\_\*\_timeout\_minutes overrides) plus cluster\_stall\_window for cluster-side stalls. Still passed through for configuration compatibility; setting it on 1.4.15+ produces a deprecation warning at every plan, so leave it null. Remove it from configurations and size provider\_timeout\_minutes for the platform's worst case instead. | `number` | `null` | no |
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Name of this deployment's Azure resource group, used exactly as given. The provider creates the group if absent; alternatively, pre-create it -- along with resources for the deployment such as the Key Vault (see `key_vault_id`) -- when RBAC grants or policy exemptions must exist before the first apply. Do not share the group with any other VMs. **On Qumulo Core versions below 7.10.1 this is a hard requirement**: the floating-IP reconciler on those versions strips secondary IPs from every NIC in the group it does not recognize (a plan-time warning reports this whenever the version to be installed -- explicit `cluster_version` or auto-selected latest -- is below 7.10.1). Versions 7.10.1 and later touch only addresses the cluster owns. | `string` | n/a | yes |
 | <a name="input_soft_capacity_limit_tb"></a> [soft\_capacity\_limit\_tb](#input\_soft\_capacity\_limit\_tb) | OPTIONAL: Soft capacity limit in TB (50 to 10000). Default is 500TB. Can be increased to add storage, but cannot be decreased. It's like a quota, unused capacity is not billed. | `number` | `500` | no |
-| <a name="input_ssh_public_key_path"></a> [ssh\_public\_key\_path](#input\_ssh\_public\_key\_path) | OPTIONAL: Path to a local SSH public key file for SSH access to cluster nodes, e.g. `"~/.ssh/id_rsa.pub"`. The file's contents are read and passed to the provider; `~` is expanded to the home directory. Do not set this to the key content itself. | `string` | `null` | no |
+| <a name="input_ssh_public_key_id"></a> [ssh\_public\_key\_id](#input\_ssh\_public\_key\_id) | REQUIRED unless the legacy `ssh_public_key_path` is set: Resource ID of the Azure SSH key (`Microsoft.Compute/sshPublicKeys`) whose public key is installed on the cluster nodes, e.g. `/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Compute/sshPublicKeys/<name>`. This is the preferred way to supply the key. Create one with `az sshkey create`, generating a new key pair or uploading an existing public key; the private key stays with you. Must be in `azure_subscription_id`. Exactly one of this and `ssh_public_key_path` must be set. See [SSH access to cluster nodes](#ssh-access-to-cluster-nodes). | `string` | `null` | no |
+| <a name="input_ssh_public_key_path"></a> [ssh\_public\_key\_path](#input\_ssh\_public\_key\_path) | LEGACY: Path to a local SSH public key file for SSH access to cluster nodes, e.g. `"~/.ssh/id_rsa.pub"`, kept for configurations written before `ssh_public_key_id` existed. Prefer `ssh_public_key_id`; exactly one of the two must be set. The file's contents are read on the host running Terraform and passed to the provider; `~` is expanded to the home directory. Do not set this to the key content itself. | `string` | `null` | no |
 | <a name="input_storage_class"></a> [storage\_class](#input\_storage\_class) | OPTIONAL: Storage backing the cluster's persistent data. HOT supports STANDARD and INTELLIGENT\_TIERING. Defaults to the provider's built-in default for the chosen cluster\_product\_type. | `string` | `null` | no |
 | <a name="input_storage_replication_type"></a> [storage\_replication\_type](#input\_storage\_replication\_type) | OPTIONAL: Azure storage replication type (immutable after creation). LRS or ZRS. | `string` | `null` | no |
 | <a name="input_subnet_id"></a> [subnet\_id](#input\_subnet\_id) | Full Azure resource ID of the subnet. The cluster's storage accounts are restricted to this subnet. The subnet must have the Microsoft.KeyVault and Microsoft.Storage service endpoints enabled. | `string` | n/a | yes |

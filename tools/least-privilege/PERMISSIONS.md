@@ -95,6 +95,7 @@ JSON tab**, paste, then Review + create. Replace `<subscription-id>` and
           "Microsoft.Resources/subscriptions/resourceGroups/read",
           "Microsoft.Resources/subscriptions/resourceGroups/write",
           "Microsoft.Compute/virtualMachines/read",
+          "Microsoft.Compute/sshPublicKeys/read",
           "Microsoft.Compute/virtualMachines/write",
           "Microsoft.Compute/virtualMachines/delete",
           "Microsoft.Compute/virtualMachines/extensions/write",
@@ -401,6 +402,7 @@ pick the role, then **Members → Managed identity** (for the identities) or
 | node identity | Key Vault Secrets User (built-in) | deployment resource group | Qumulo Core reads the SAS definitions the provider stored in the vault |
 | node identity | Storage Blob Data Reader (built-in) | deployment resource group | reads deployment assets from blob storage |
 | provisioner identity | App Configuration Data Owner (built-in) | deployment resource group | writes provisioning status keys the provider and operators poll |
+| deployer | Reader (built-in) | the Azure SSH key named by `ssh_public_key_id`, when set | reads the node public key at plan time, wherever the key lives |
 | provisioner identity | Reader (built-in) | deployment resource group | resolves the resources it reports against |
 | provisioner identity | Key Vault Secrets User (built-in) | deployment resource group | matches the grant the provider makes for its own provisioner identities |
 

@@ -46,8 +46,16 @@ data "azurerm_subnet" "selected" {
 }
 
 locals {
-  allow_cidrs    = var.allow_cidrs == null ? data.azurerm_subnet.selected.address_prefixes : var.allow_cidrs
-  ssh_public_key = var.ssh_public_key_path == null ? null : file(pathexpand(var.ssh_public_key_path))
+  allow_cidrs = var.allow_cidrs == null ? data.azurerm_subnet.selected.address_prefixes : var.allow_cidrs
+  ssh_public_key = (
+    var.ssh_public_key_id != null ? data.azurerm_ssh_public_key.selected[0].public_key :
+    var.ssh_public_key_path != null ? file(pathexpand(var.ssh_public_key_path)) :
+    null
+  )
+  ssh_public_key_id_parts = var.ssh_public_key_id == null ? null : regex(
+    "^/subscriptions/[^/]+/resourceGroups/(?P<resource_group>[^/]+)/providers/Microsoft\\.Compute/sshPublicKeys/(?P<name>[^/]+)$",
+    var.ssh_public_key_id
+  )
 
   # node_hooks_files/provisioner_hooks_files default to null as a whole object; normalize the
   # single-file and list forms into one list per anchor, in inline order. Each entry's content
@@ -109,6 +117,15 @@ module "secrets" {
   source = "./modules/secrets"
 
   admin_pwd_or_keyvault_secret_id = var.admin_pwd_or_keyvault_secret_id
+}
+
+# The public key of an Azure SSH key resource. Only the public key is read; the
+# private key stays wherever the operator keeps it. The read happens at plan, so a
+# deployer that cannot see the key fails the plan before anything is created.
+data "azurerm_ssh_public_key" "selected" {
+  count               = var.ssh_public_key_id == null ? 0 : 1
+  name                = local.ssh_public_key_id_parts.name
+  resource_group_name = local.ssh_public_key_id_parts.resource_group
 }
 
 #This resource builds the Qumulo Cluster consisting of Azure VMs, managed disks/storage accounts, a resource group, managed identities, and (optionally) a Key Vault.

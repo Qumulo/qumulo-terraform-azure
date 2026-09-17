@@ -33,7 +33,7 @@ module "cloud_native_qumulo_rhel" {
   #   version   = "latest"
   # }]
 
-  ssh_public_key_path = "~/.ssh/id_rsa.pub"
+  ssh_public_key_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-keys-rg/providers/Microsoft.Compute/sshPublicKeys/my-ssh-key"
   tags = {
     owner      = "owner"
     department = "department"

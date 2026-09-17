@@ -614,11 +614,34 @@ variable "soft_capacity_limit_tb" {
   nullable    = false
 }
 
-variable "ssh_public_key_path" {
-  description = "OPTIONAL: Path to a local SSH public key file for SSH access to cluster nodes, e.g. \"~/.ssh/id_rsa.pub\". The file's contents are read and passed to the provider; \"~\" is expanded to the home directory. Do not set this to the key content itself."
+variable "ssh_public_key_id" {
+  description = "REQUIRED unless the legacy ssh_public_key_path is set: Resource ID of the Azure SSH key (Microsoft.Compute/sshPublicKeys) whose public key is installed on the cluster nodes, e.g. \"/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Compute/sshPublicKeys/<name>\". This is the preferred way to supply the key. Create one with az sshkey create, generating a new key pair or uploading an existing public key; the private key stays with you. Must be in azure_subscription_id. Exactly one of this and ssh_public_key_path must be set."
   type        = string
   default     = null
   nullable    = true
+  validation {
+    condition     = var.ssh_public_key_id == null || can(regex("^/subscriptions/[0-9a-fA-F-]+/resourceGroups/[^/]+/providers/Microsoft\\.Compute/sshPublicKeys/[^/]+$", var.ssh_public_key_id))
+    error_message = "ssh_public_key_id must be the resource ID of an Azure SSH key: /subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Compute/sshPublicKeys/<name>."
+  }
+  validation {
+    condition     = var.ssh_public_key_id == null || startswith(lower(var.ssh_public_key_id), lower("/subscriptions/${var.azure_subscription_id}/"))
+    error_message = "ssh_public_key_id must be in azure_subscription_id; the azurerm provider reads it from that subscription."
+  }
+  validation {
+    condition     = (var.ssh_public_key_id != null) != (var.ssh_public_key_path != null)
+    error_message = "Set exactly one of ssh_public_key_id or ssh_public_key_path: the cluster nodes need an SSH public key."
+  }
+}
+
+variable "ssh_public_key_path" {
+  description = "LEGACY: Path to a local SSH public key file for SSH access to cluster nodes, e.g. \"~/.ssh/id_rsa.pub\", kept for configurations written before ssh_public_key_id existed. Prefer ssh_public_key_id; exactly one of the two must be set. The file's contents are read on the host running Terraform and passed to the provider; \"~\" is expanded to the home directory. Do not set this to the key content itself."
+  type        = string
+  default     = null
+  nullable    = true
+  validation {
+    condition     = var.ssh_public_key_path == null || fileexists(pathexpand(var.ssh_public_key_path))
+    error_message = "ssh_public_key_path must name a file that exists on the host running Terraform (\"~\" is expanded). The file's contents are sent to the provider; do not set this to the key itself."
+  }
 }
 
 variable "storage_class" {

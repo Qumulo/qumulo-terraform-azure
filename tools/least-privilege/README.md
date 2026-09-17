@@ -35,7 +35,7 @@ permission preflight. The `wrapper_tfvars` output lists exactly what to set.
 The shared deployment values -- subscription, subnet, resource group, location,
 tags, `key_vault_id`, `admin_pwd_or_keyvault_secret_id`, `deletion_protection`,
 `persistent_storage_resource_group`, `custom_image_id`,
-`provisioner_custom_image_id`, and the `*_private_dns_zone_id` zones -- are
+`provisioner_custom_image_id`, `ssh_public_key_id`, and the `*_private_dns_zone_id` zones -- are
 inherited from the wrapper's
 top-level `terraform.tfvars`: this module declares the same variable names, so
 one file supplies both configurations. Fill in this directory's
