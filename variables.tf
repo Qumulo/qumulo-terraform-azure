@@ -488,6 +488,13 @@ variable "node_hooks_files" {
   nullable = true
 }
 
+variable "node_replacement_when_changed" {
+  description = "OPTIONAL: A pure change-trigger, not a real setting -- the value itself is never inspected. Leave it at its default and this does nothing. When you edit it to a new value (e.g. today's date, a short note, an incrementing number) with no other change, the provider issues a full cluster replace: every node is rebuilt one at a time, with the same vm_type and node_count, exactly as if you had changed vm_type. Use it to force a rebuild for reasons Terraform can't otherwise detect from your configuration -- for example, adopting an underlying disk-layout or tunable fix that only takes effect on newly-built nodes. Requires a provider version that ships node_replacement_when_changed on qumulo_filesystem_azure; check versions.tf."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 variable "nsg_allow_ingress_icmp" {
   description = "OPTIONAL: Enable ICMP ingress in the NSG rules the provider creates, for network diagnostics."
   type        = bool
