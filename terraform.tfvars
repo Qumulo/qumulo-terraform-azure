@@ -14,9 +14,9 @@
 # availability_zones            - (OPTIONAL) Availability zones for deployment, e.g. ["1", "2", "3"]. Omit for zoneless regions.
 # azure_environment             - (OPTIONAL) Azure cloud environment for the qumulo provider. "public" or "usgovernment". Default = "public".
 # cluster_node_identity_id      - (OPTIONAL) Resource ID of a user-assigned managed identity for cluster nodes. If omitted, the provider creates one.
-# custom_image_id               - (OPTIONAL) Custom VM image resource ID for cluster nodes. If omitted, the default Qumulo image (Ubuntu) is used.
+# custom_image_id               - (OPTIONAL) Custom VM image resource ID for cluster nodes. Also supplies the provisioner's image -- there is no
+#                                 separate provisioner_custom_image_id. If omitted, the default Qumulo image (Ubuntu) is used.
 # key_vault_id                  - (OPTIONAL) Full Azure resource ID of a customer-managed Key Vault. If omitted, the provider creates one.
-# provisioner_custom_image_id   - (OPTIONAL) Custom VM image resource ID for the provisioner instance. Defaults to the default Qumulo image.
 # provisioner_identity_id       - (OPTIONAL) Resource ID of a user-assigned managed identity for the provisioner VM. If omitted, the provider creates one.
 # provisioner_vm_type           - (OPTIONAL) Azure VM size for the provisioner instance (used during deploy operations). Defaults to the provider's built-in default.
 # ssh_public_key_path           - (OPTIONAL) Path to a local SSH public key file for SSH access to cluster nodes. ie: "~/.ssh/id_rsa.pub"
@@ -32,16 +32,15 @@ vm_type               = "Standard_L8s_v4"
 azure_subscription_id = "00000000-0000-0000-0000-000000000000"
 
 #------------OPTIONAL------------------
-allow_cidrs                 = null
-availability_zones          = ["1", "2", "3"]
-azure_environment           = "public"
-cluster_node_identity_id    = null
-custom_image_id             = null
-key_vault_id                = null
-provisioner_custom_image_id = null
-provisioner_identity_id     = null
-provisioner_vm_type         = null
-ssh_public_key_path         = null
+allow_cidrs              = null
+availability_zones       = ["1", "2", "3"]
+azure_environment        = "public"
+cluster_node_identity_id = null
+custom_image_id          = null
+key_vault_id             = null
+provisioner_identity_id  = null
+provisioner_vm_type      = null
+ssh_public_key_path      = null
 tags = {
   owner      = "smith"
   department = "it"
@@ -68,7 +67,6 @@ tags = {
 # cluster_uuid                   - (OPTIONAL) UUID of an existing cluster to import/adopt. Leave null for new deployments.
 # cluster_version                - (OPTIONAL) Qumulo software version. Defaults to latest. Immutable after creation. Upgrade version via cluster UI/API.
 # floating_ip_count              - (OPTIONAL) Number of floating IPs to assign to the cluster. Must be 0, or between 3 and 100. Requires networking_mode "host_managed". Default=3.
-# nexus_registration_key         - (OPTIONAL, Deprecated) Qumulo Nexus registration key for remote support. Obtain from https://nexus.qumulo.com/user/registration-key. Ignored if nexus_api_token is set (see OPTIONAL ADVANCED SETTINGS below).
 # provider_timeout_minutes       - (OPTIONAL) The default timeout, in minutes, applied to any of create/update/delete not overridden individually below. Default is 30 minutes.
 # provider_create_timeout_minutes - (OPTIONAL) Timeout override for cluster creation, in minutes. Defaults to provider_timeout_minutes if unset. Consider raising this for larger node_count deployments.
 # provider_update_timeout_minutes - (OPTIONAL) Timeout override for cluster updates (scaling, vm_type changes), in minutes. Defaults to provider_timeout_minutes if unset.
@@ -93,7 +91,6 @@ deletion_protection             = true
 cluster_uuid                    = null
 cluster_version                 = null
 floating_ip_count               = 3
-nexus_registration_key          = null
 provider_timeout_minutes        = 30
 provider_create_timeout_minutes = null
 provider_update_timeout_minutes = null
@@ -136,20 +133,22 @@ hooks_apply_watch = true
 # marketplace_image / provisioner_marketplace_image - (OPTIONAL) Azure Marketplace image specs. Defaults to Ubuntu if unset. See examples/azure-rhel.tf for a populated RHEL 8/9 example, e.g.:
 #   marketplace_image = [{ publisher = "RedHat", offer = "RHEL", sku = "9-lvm-gen2", version = "latest" }]
 # naming                                  - (OPTIONAL) Custom naming templates for Azure resources.
-# nexus_api_token                         - (OPTIONAL) Qumulo Nexus API token (provider-level). When set, auto-mints nexus_registration_key and onboards to Nexus Fleet automatically.
-# nexus_account_id                        - (OPTIONAL) Qumulo Nexus organization ID (provider-level). Only relevant when nexus_api_token is set; omit to auto-resolve from the token.
+# nexus_api_token_or_keyvault_secret_id   - (OPTIONAL) Qumulo Nexus API token (provider-level), as plaintext, a Key Vault secret resource ID, or a Key Vault secret
+#                                            URI -- resolved the same way as admin_pwd_or_keyvault_secret_id. When set, auto-mints a per-cluster Nexus registration
+#                                            key and onboards to Nexus Fleet automatically.
+# nexus_account_id                        - (OPTIONAL) Qumulo Nexus organization ID (provider-level). Only relevant when nexus_api_token_or_keyvault_secret_id is set; omit to auto-resolve from the token.
 # disable_appconfig_public_network_access = true
 # disable_keyvault_public_network_access  = true
-networking_mode                    = null
-nsg_allow_ingress_icmp             = false
-persistent_storage_resource_group  = null
-private_link_appconfig_dns_zone_id = null
-private_link_keyvault_dns_zone_id  = null
-marketplace_image                  = null
-provisioner_marketplace_image      = null
-naming                             = null
-nexus_api_token                    = null
-nexus_account_id                   = null
+networking_mode                       = null
+nsg_allow_ingress_icmp                = false
+persistent_storage_resource_group     = null
+private_link_appconfig_dns_zone_id    = null
+private_link_keyvault_dns_zone_id     = null
+marketplace_image                     = null
+provisioner_marketplace_image         = null
+naming                                = null
+nexus_api_token_or_keyvault_secret_id = null
+nexus_account_id                      = null
 
 # ***** OPTIONAL Cluster DNS *****
 # cluster_fqdn - For clusters that want Qumulo Core to answer DNS queries directly with floating IPs (no separate DNS forwarder needed, unlike the AWS Route 53 Resolver pattern).

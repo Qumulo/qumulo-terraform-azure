@@ -10,16 +10,15 @@ module "cloud_native_qumulo" {
   azure_subscription_id = "00000000-0000-0000-0000-000000000000"
 
   #------------OPTIONAL------------------
-  allow_cidrs                 = null
-  availability_zones          = ["1", "2", "3"]
-  azure_environment           = "public"
-  cluster_node_identity_id    = null
-  custom_image_id             = null
-  key_vault_id                = null
-  provisioner_custom_image_id = null
-  provisioner_identity_id     = null
-  provisioner_vm_type         = null
-  ssh_public_key_path         = null
+  allow_cidrs              = null
+  availability_zones       = ["1", "2", "3"]
+  azure_environment        = "public"
+  cluster_node_identity_id = null
+  custom_image_id          = null
+  key_vault_id             = null
+  provisioner_identity_id  = null
+  provisioner_vm_type      = null
+  ssh_public_key_path      = null
   tags = {
     owner        = "owner"
     department   = "department"
@@ -36,13 +35,13 @@ module "cloud_native_qumulo" {
   deletion_protection             = true
 
   #------------OPTIONAL------------------
-  cluster_version          = null
-  floating_ip_count        = 3
-  nexus_registration_key   = null
-  provider_timeout_minutes = 30
-  storage_class            = null
-  storage_replication_type = null
-  soft_capacity_limit_tb   = null
+  cluster_version                       = null
+  floating_ip_count                     = 3
+  nexus_api_token_or_keyvault_secret_id = null
+  provider_timeout_minutes              = 30
+  storage_class                         = null
+  storage_replication_type              = null
+  soft_capacity_limit_tb                = null
 }
 
 output "outputs_cloud_native_qumulo" {

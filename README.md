@@ -39,20 +39,19 @@ module "cloud_native_qumulo" {
   location              = "eastus2"
   resource_group_name   = "rg-qumulo"
   subnet_id             = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-network-rg/providers/Microsoft.Network/virtualNetworks/my-vnet/subnets/my-subnet"
-  vm_type                = "Standard_L8s_v4"
+  vm_type               = "Standard_L8s_v4"
   azure_subscription_id = "00000000-0000-0000-0000-000000000000"
 
   #------------OPTIONAL------------------
-  allow_cidrs                 = null
-  availability_zones          = ["1", "2", "3"]
-  azure_environment           = "public"
-  cluster_node_identity_id    = null
-  custom_image_id             = null
-  key_vault_id                = null
-  provisioner_custom_image_id = null
-  provisioner_identity_id     = null
-  provisioner_vm_type         = null
-  ssh_public_key_path         = null
+  allow_cidrs              = null
+  availability_zones       = ["1", "2", "3"]
+  azure_environment        = "public"
+  cluster_node_identity_id = null
+  custom_image_id          = null
+  key_vault_id             = null
+  provisioner_identity_id  = null
+  provisioner_vm_type      = null
+  ssh_public_key_path      = null
   tags = {
     owner        = "owner"
     department   = "department"
@@ -69,13 +68,13 @@ module "cloud_native_qumulo" {
   deletion_protection             = true
 
   #------------OPTIONAL------------------
-  cluster_version          = null
-  floating_ip_count        = 3
-  nexus_registration_key   = null
-  provider_timeout_minutes = 30
-  storage_class            = null
-  storage_replication_type = null
-  soft_capacity_limit_tb   = null
+  cluster_version                       = null
+  floating_ip_count                     = 3
+  nexus_api_token_or_keyvault_secret_id = null
+  provider_timeout_minutes              = 30
+  storage_class                         = null
+  storage_replication_type              = null
+  soft_capacity_limit_tb                = null
 }
 
 output "outputs_cloud_native_qumulo" {
@@ -200,7 +199,7 @@ endpoint until you do.
 | <a name="input_create_appconfig_private_endpoint"></a> [create\_appconfig\_private\_endpoint](#input\_create\_appconfig\_private\_endpoint) | OPTIONAL: Private endpoint for the App Configuration store; leave false to keep it on its public endpoint -- see [Private networking (post-deployment)](#private-networking-post-deployment). Conflicts with the LEGACY `private_link_*` / `disable_*` variables. | `bool` | `false` | no |
 | <a name="input_create_keyvault_private_endpoint"></a> [create\_keyvault\_private\_endpoint](#input\_create\_keyvault\_private\_endpoint) | OPTIONAL: Private endpoint for the Key Vault -- see [Private networking (post-deployment)](#private-networking-post-deployment). Conflicts with `key_vault_id` and the LEGACY `private_link_*` / `disable_*` variables. | `bool` | `false` | no |
 | <a name="input_create_storage_private_endpoint"></a> [create\_storage\_private\_endpoint](#input\_create\_storage\_private\_endpoint) | OPTIONAL: Private endpoints for the cluster's storage accounts (one per account) -- see [Private networking (post-deployment)](#private-networking-post-deployment). Conflicts with the LEGACY `private_link_*` / `disable_*` variables. | `bool` | `false` | no |
-| <a name="input_custom_image_id"></a> [custom\_image\_id](#input\_custom\_image\_id) | OPTIONAL: Custom VM image resource ID for cluster nodes. If omitted, the default Qumulo image (Ubuntu) is used. | `string` | `null` | no |
+| <a name="input_custom_image_id"></a> [custom\_image\_id](#input\_custom\_image\_id) | OPTIONAL: Custom VM image resource ID for cluster nodes. Also supplies the provisioner's image -- there is no separate provisioner\_custom\_image\_id. If omitted, the default Qumulo image (Ubuntu) is used. | `string` | `null` | no |
 | <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | Protects the cluster's VMs and storage accounts from deletion with CanNotDelete management locks. | `bool` | `true` | no |
 | <a name="input_deployment_name"></a> [deployment\_name](#input\_deployment\_name) | Lowercase seed for Azure resource names (2-15 characters: lowercase letters, digits, interior hyphens). | `string` | n/a | yes |
 | <a name="input_disable_appconfig_public_network_access"></a> [disable\_appconfig\_public\_network\_access](#input\_disable\_appconfig\_public\_network\_access) | LEGACY: Disable public network access to the App Configuration instance the provider creates. Requires `private_link_appconfig_dns_zone_id`. Superseded by the `create_*_private_endpoint` variables + `disable_public_network_access_post_deploy`. | `bool` | `null` | no |
@@ -214,9 +213,8 @@ endpoint until you do.
 | <a name="input_marketplace_image"></a> [marketplace\_image](#input\_marketplace\_image) | OPTIONAL: Azure Marketplace image specification for cluster nodes. | `list(object({ publisher = string, offer = string, sku = string, version = string }))` | `null` | no |
 | <a name="input_naming"></a> [naming](#input\_naming) | OPTIONAL: Custom naming templates for Azure resources. | `list(object({ storage_account = optional(string), vm_name = optional(string) }))` | `null` | no |
 | <a name="input_networking_mode"></a> [networking\_mode](#input\_networking\_mode) | OPTIONAL: Network management mode for cluster nodes ("host\_managed" default or "qumulo\_managed"). | `string` | `null` | no |
-| <a name="input_nexus_account_id"></a> [nexus\_account\_id](#input\_nexus\_account\_id) | OPTIONAL: Qumulo Nexus organization ID to onboard newly-created clusters to. Only relevant when nexus\_api\_token is set; omit to let the provider auto-resolve the organization from the token's binding. | `number` | `null` | no |
-| <a name="input_nexus_api_token"></a> [nexus\_api\_token](#input\_nexus\_api\_token) | OPTIONAL: Qumulo Nexus API token. When set, the provider auto-mints nexus\_registration\_key and onboards new clusters to Nexus Fleet automatically; any value supplied to nexus\_registration\_key is ignored. Leave null (with nexus\_registration\_key) to skip Nexus onboarding entirely. | `string` | `null` | no |
-| <a name="input_nexus_registration_key"></a> [nexus\_registration\_key](#input\_nexus\_registration\_key) | OPTIONAL: (Deprecated) Qumulo Nexus registration key for remote support. Ignored when nexus\_api\_token is set on the provider. | `string` | `null` | no |
+| <a name="input_nexus_account_id"></a> [nexus\_account\_id](#input\_nexus\_account\_id) | OPTIONAL: Qumulo Nexus organization ID to onboard newly-created clusters to. Only relevant when nexus\_api\_token\_or\_keyvault\_secret\_id is set; omit to let the provider auto-resolve the organization from the token's binding. | `number` | `null` | no |
+| <a name="input_nexus_api_token_or_keyvault_secret_id"></a> [nexus\_api\_token\_or\_keyvault\_secret\_id](#input\_nexus\_api\_token\_or\_keyvault\_secret\_id) | OPTIONAL: Qumulo Nexus API token, provided as plaintext, an Azure Key Vault secret resource ID, or a Key Vault secret URI -- resolved the same way as `admin_pwd_or_keyvault_secret_id`. When set, the provider auto-mints a per-cluster Nexus registration key and onboards new clusters to Nexus Fleet automatically. Leave null to skip Nexus onboarding entirely. | `string` | `null` | no |
 | <a name="input_node_count"></a> [node\_count](#input\_node\_count) | Number of nodes in the cluster. Valid values: 1 (single node), or 3-24. 2 is not supported, and 4 requires a single availability zone. | `number` | n/a | yes |
 | <a name="input_node_hooks_files"></a> [node\_hooks\_files](#input\_node\_hooks\_files) | OPTIONAL: Advanced use only. Filenames (relative to the hooks/ directory) spliced into each node's boot script at pre\_run\_file / post\_run\_file anchors. Runs only on first boot. `override_file` replaces the entire node boot script. | `object({ pre_run_file = optional(string), post_run_file = optional(string), override_file = optional(string) })` | `null` | no |
 | <a name="input_nsg_allow_ingress_icmp"></a> [nsg\_allow\_ingress\_icmp](#input\_nsg\_allow\_ingress\_icmp) | OPTIONAL: Enable ICMP ingress in the NSG rules the provider creates, for network diagnostics. | `bool` | `false` | no |
@@ -227,7 +225,6 @@ endpoint until you do.
 | <a name="input_provider_delete_timeout_minutes"></a> [provider\_delete\_timeout\_minutes](#input\_provider\_delete\_timeout\_minutes) | OPTIONAL: Timeout override (in minutes) for cluster deletion. Defaults to provider\_timeout\_minutes if unset. The provider's own built-in default (used only if the whole timeouts block were omitted) is 30 minutes. | `number` | `null` | no |
 | <a name="input_provider_timeout_minutes"></a> [provider\_timeout\_minutes](#input\_provider\_timeout\_minutes) | The default timeout (in minutes) applied to any of create/update/delete not individually overridden by provider\_create\_timeout\_minutes / provider\_update\_timeout\_minutes / provider\_delete\_timeout\_minutes. | `number` | `30` | no |
 | <a name="input_provider_update_timeout_minutes"></a> [provider\_update\_timeout\_minutes](#input\_provider\_update\_timeout\_minutes) | OPTIONAL: Timeout override (in minutes) for cluster updates (e.g. scaling, vm\_type changes). Defaults to provider\_timeout\_minutes if unset. The provider's own built-in default (used only if the whole timeouts block were omitted) is 60 minutes. | `number` | `null` | no |
-| <a name="input_provisioner_custom_image_id"></a> [provisioner\_custom\_image\_id](#input\_provisioner\_custom\_image\_id) | OPTIONAL: Custom VM image resource ID for the provisioner instance. Defaults to the default Qumulo image. | `string` | `null` | no |
 | <a name="input_provisioner_hooks_files"></a> [provisioner\_hooks\_files](#input\_provisioner\_hooks\_files) | OPTIONAL: Advanced use only. Filenames (relative to the hooks/ directory) spliced into the provisioner's boot script at pre\_run\_file / post\_run\_file anchors. `override_file` replaces the entire provisioner boot script. | `object({ pre_run_file = optional(string), post_run_file = optional(string), override_file = optional(string) })` | `null` | no |
 | <a name="input_provisioner_identity_id"></a> [provisioner\_identity\_id](#input\_provisioner\_identity\_id) | OPTIONAL: Resource ID of a user-assigned managed identity for the provisioner VM. If omitted, the provider creates one. | `string` | `null` | no |
 | <a name="input_provisioner_marketplace_image"></a> [provisioner\_marketplace\_image](#input\_provisioner\_marketplace\_image) | OPTIONAL: Azure Marketplace image specification for the provisioner VM. | `list(object({ publisher = string, offer = string, sku = string, version = string }))` | `null` | no |

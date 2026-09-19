@@ -13,8 +13,8 @@
 #
 # Inherited from ../../terraform.tfvars: azure_subscription_id, location,
 # resource_group_name, subnet_id, tags, key_vault_id, admin_pwd_or_keyvault_secret_id,
-# deletion_protection, persistent_storage_resource_group, custom_image_id,
-# provisioner_custom_image_id, blob_/keyvault_/appconfig_private_dns_zone_id.
+# deletion_protection, persistent_storage_resource_group, custom_image_id (also supplies
+# the provisioner's image), blob_/keyvault_/appconfig_private_dns_zone_id.
 #
 # This file holds only what the wrapper does not know:
 # admin_password_key_vault_id     - (OPTIONAL) Resource ID of the vault holding the cluster admin password,
