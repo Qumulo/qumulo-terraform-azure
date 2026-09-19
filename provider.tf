@@ -55,9 +55,11 @@ provider "azapi" {
 }
 
 provider "qumulo" {
-  # OPTIONAL: auto-mints the deprecated per-cluster nexus_registration_key and onboards new
-  # clusters to Nexus Fleet automatically. Leave both null to skip Nexus onboarding entirely.
-  nexus_api_token  = var.nexus_api_token
+  # OPTIONAL: auto-mints a per-cluster Nexus registration key and onboards new clusters to Nexus
+  # Fleet automatically. Leave both null to skip Nexus onboarding entirely. The token is resolved
+  # from Key Vault (or taken as plaintext) by module.secrets, the same mechanism used for the
+  # cluster admin password -- see nexus_api_token_or_keyvault_secret_id.
+  nexus_api_token  = module.secrets.resolved_token
   nexus_account_id = var.nexus_account_id
 
   # How long a node addition, removal, or replacement may show no cluster activity before the

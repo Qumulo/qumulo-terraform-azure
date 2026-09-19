@@ -25,3 +25,9 @@ output "resolved_password" {
   sensitive   = true
   description = "The resolved secret value, pulled either from the plaintext variable or the Azure Key Vault secret reference."
 }
+
+output "resolved_token" {
+  value       = local.final_token
+  sensitive   = true
+  description = "The resolved Nexus API token, pulled either from the plaintext variable, the Azure Key Vault secret reference, or null if nexus_api_token_or_keyvault_secret_id was not set."
+}

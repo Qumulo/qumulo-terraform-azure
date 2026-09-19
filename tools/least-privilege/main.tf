@@ -37,8 +37,9 @@ locals {
   admin_password_read_scope = local.admin_password_vault_id == null ? null : coalesce(local.admin_secret_id, local.admin_password_vault_id)
 
   #A gallery image is granted at its gallery, so a new image definition or version needs no new grant.
+  #custom_image_id also supplies the provisioner's image (no separate provisioner_custom_image_id).
   image_scopes = toset([
-    for id in compact([var.custom_image_id, var.provisioner_custom_image_id]) :
+    for id in compact([var.custom_image_id]) :
     can(regex("/galleries/[^/]+/images/", id)) ? regex("^(.*/galleries/[^/]+)/images/", id)[0] : id
   ])
 

@@ -451,8 +451,8 @@ executor automatically; in the Portal, add yourself here.)
   `Microsoft.Resources/subscriptions/resourceGroups/read`, `Microsoft.Storage`,
   and `Microsoft.KeyVault` blocks (actions and data actions), and assign it
   there; also move the node identity's Storage Blob Data Reader to that group.
-- **Custom VM images** (wrapper `custom_image_id` / `provisioner_custom_image_id`):
-  creating a VM from an image the deployer cannot read fails
+- **Custom VM images** (wrapper `custom_image_id`, which also supplies the
+  provisioner's image): creating a VM from an image the deployer cannot read fails
   (`LinkedAuthorizationFailed` on `galleries/images/versions/read`), so assign
   the deployer **Reader** on the image -- for a Compute Gallery image, on the
   gallery itself, so a refreshed image definition or version deploys without a

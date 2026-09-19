@@ -86,13 +86,7 @@ variable "key_vault_id" {
 }
 
 variable "custom_image_id" {
-  description = "OPTIONAL: Custom VM image resource ID for cluster nodes (the wrapper's custom_image_id). The deployer is granted Reader on the image (for a Compute Gallery image, on the whole gallery) so VMs can be created from it and from later images in the same gallery."
-  type        = string
-  default     = null
-}
-
-variable "provisioner_custom_image_id" {
-  description = "OPTIONAL: Custom VM image resource ID for the provisioner (the wrapper's provisioner_custom_image_id). Same grant as custom_image_id."
+  description = "OPTIONAL: Custom VM image resource ID for cluster nodes (the wrapper's custom_image_id, which also supplies the provisioner's image -- there is no separate provisioner_custom_image_id). The deployer is granted Reader on the image (for a Compute Gallery image, on the whole gallery) so VMs can be created from it and from later images in the same gallery."
   type        = string
   default     = null
 }

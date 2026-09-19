@@ -258,7 +258,7 @@ variable "create_storage_private_endpoint" {
 }
 
 variable "custom_image_id" {
-  description = "OPTIONAL: Custom VM image resource ID for cluster nodes. If omitted, the default Qumulo image (Ubuntu) is used. Mutually exclusive with marketplace_image."
+  description = "OPTIONAL: Custom VM image resource ID for cluster nodes. If omitted, the default Qumulo image (Ubuntu) is used. Also used for the provisioner instance -- there is no separate provisioner_custom_image_id; the provisioner always gets the same image as the cluster nodes. Mutually exclusive with marketplace_image and provisioner_marketplace_image."
   type        = string
   default     = null
   nullable    = true
@@ -266,6 +266,11 @@ variable "custom_image_id" {
   validation {
     condition     = !(var.custom_image_id != null && var.marketplace_image != null)
     error_message = "Set only one of custom_image_id or marketplace_image for cluster nodes, not both."
+  }
+
+  validation {
+    condition     = !(var.custom_image_id != null && var.provisioner_marketplace_image != null)
+    error_message = "custom_image_id now also supplies the provisioner's image (there is no separate provisioner_custom_image_id), so it conflicts with provisioner_marketplace_image. Set only one."
   }
 }
 
@@ -421,26 +426,39 @@ variable "networking_mode" {
 }
 
 variable "nexus_account_id" {
-  description = "OPTIONAL: Qumulo Nexus organization ID to onboard newly-created clusters to. Only relevant when nexus_api_token is set; omit to let the provider auto-resolve the organization from the token's binding."
+  description = "OPTIONAL: Qumulo Nexus organization ID to onboard newly-created clusters to. Only relevant when nexus_api_token_or_keyvault_secret_id is set; omit to let the provider auto-resolve the organization from the token's binding."
   type        = number
   default     = null
   nullable    = true
 }
 
-variable "nexus_api_token" {
-  description = "OPTIONAL: Qumulo Nexus API token. When set, the provider auto-mints nexus_registration_key and onboards new clusters to Nexus Fleet automatically; any value supplied to nexus_registration_key is ignored. Leave null (with nexus_registration_key) to skip Nexus onboarding entirely."
+variable "nexus_api_token_or_keyvault_secret_id" {
+  description = "OPTIONAL: Qumulo Nexus API token, provided as plaintext, an Azure Key Vault secret resource ID (<key_vault_resource_id>/secrets/<secret_name>), or a Key Vault secret URI (https://<vault>.vault.azure.net/secrets/<secret_name>/<version>). Resolved the same way as admin_pwd_or_keyvault_secret_id -- see that variable for the URI-version caveat. When set, the provider auto-mints a per-cluster Nexus registration key and onboards new clusters to Nexus Fleet automatically. Leave null to skip Nexus onboarding entirely. Best practice is to store the token (it is long-lived) in Key Vault and reference it here rather than passing plaintext."
   type        = string
   sensitive   = true
   default     = null
   nullable    = true
-}
 
-variable "nexus_registration_key" {
-  description = "OPTIONAL: (Deprecated) Qumulo Nexus registration key for remote support. Ignored when nexus_api_token is set on the provider."
-  type        = string
-  sensitive   = true
-  default     = null
-  nullable    = true
+  validation {
+    condition = (
+      var.nexus_api_token_or_keyvault_secret_id == null ||
+
+      # Option A: Valid Azure Key Vault secret ARM resource ID
+      can(regex("^/subscriptions/[0-9a-fA-F-]+/resourceGroups/[^/]+/providers/Microsoft\\.KeyVault/vaults/[^/]+/secrets/[^/]+$", var.nexus_api_token_or_keyvault_secret_id)) ||
+
+      # Option B: Valid Azure Key Vault secret URI, e.g. https://<vault>.vault.azure.net/secrets/<name>/<version>
+      can(regex("^https://[a-zA-Z0-9-]+\\.vault\\.(azure\\.net|usgovcloudapi\\.net)/secrets/[a-zA-Z0-9-]+(/[a-zA-Z0-9]+)?/?$", var.nexus_api_token_or_keyvault_secret_id)) ||
+
+      # Option C: Plaintext Nexus API token -- these are fixed-length (80 characters); reject
+      # anything that looks like a copy-paste mistake (a URL or resource ID) rather than silently
+      # treating it as a literal token.
+      (
+        !can(regex("^(https?://|/subscriptions/)", var.nexus_api_token_or_keyvault_secret_id)) &&
+        length(var.nexus_api_token_or_keyvault_secret_id) == 80
+      )
+    )
+    error_message = "The nexus_api_token_or_keyvault_secret_id must be a valid Azure Key Vault secret resource ID (/subscriptions/.../vaults/<vault>/secrets/<secret>), a Key Vault secret URI (https://<vault>.vault.azure.net/secrets/<secret>/<version>), or a plaintext Nexus API token (exactly 80 characters). A value starting with http(s):// or /subscriptions/ that doesn't match either reference format is rejected rather than used as a literal token."
+  }
 }
 
 variable "node_count" {
@@ -523,18 +541,6 @@ variable "provider_delete_timeout_minutes" {
   type        = number
   default     = null
   nullable    = true
-}
-
-variable "provisioner_custom_image_id" {
-  description = "OPTIONAL: Custom VM image resource ID for the provisioner instance. Defaults to the default Qumulo image. Mutually exclusive with provisioner_marketplace_image."
-  type        = string
-  default     = null
-  nullable    = true
-
-  validation {
-    condition     = !(var.provisioner_custom_image_id != null && var.provisioner_marketplace_image != null)
-    error_message = "Set only one of provisioner_custom_image_id or provisioner_marketplace_image, not both."
-  }
 }
 
 variable "provisioner_hooks_files" {

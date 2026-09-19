@@ -25,3 +25,11 @@ variable "admin_pwd_or_keyvault_secret_id" {
   type        = string
   sensitive   = true
 }
+
+variable "nexus_api_token_or_keyvault_secret_id" {
+  description = "OPTIONAL: Provide either a plaintext Nexus API token, the resource ID of an Azure Key Vault secret, or a Key Vault secret URI. Null skips Nexus onboarding entirely."
+  type        = string
+  sensitive   = true
+  default     = null
+  nullable    = true
+}

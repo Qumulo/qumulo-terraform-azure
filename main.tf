@@ -108,7 +108,8 @@ check "floating_ip_reconciler_scope" {
 module "secrets" {
   source = "./modules/secrets"
 
-  admin_pwd_or_keyvault_secret_id = var.admin_pwd_or_keyvault_secret_id
+  admin_pwd_or_keyvault_secret_id       = var.admin_pwd_or_keyvault_secret_id
+  nexus_api_token_or_keyvault_secret_id = var.nexus_api_token_or_keyvault_secret_id
 }
 
 #This resource builds the Qumulo Cluster consisting of Azure VMs, managed disks/storage accounts, a resource group, managed identities, and (optionally) a Key Vault.
@@ -139,13 +140,12 @@ resource "qumulo_filesystem_azure" "cluster" {
   marketplace_image                       = var.marketplace_image
   naming                                  = var.naming
   networking_mode                         = var.networking_mode
-  nexus_registration_key                  = var.nexus_registration_key
   node_count                              = var.node_count
   nsg_allow_ingress_icmp                  = var.nsg_allow_ingress_icmp
   persistent_storage_resource_group       = var.persistent_storage_resource_group
   private_link_appconfig_dns_zone_id      = var.private_link_appconfig_dns_zone_id
   private_link_keyvault_dns_zone_id       = var.private_link_keyvault_dns_zone_id
-  provisioner_custom_image_id             = var.provisioner_custom_image_id
+  provisioner_custom_image_id             = var.custom_image_id
   provisioner_identity_id                 = var.provisioner_identity_id
   provisioner_marketplace_image           = var.provisioner_marketplace_image
   provisioner_vm_type                     = var.provisioner_vm_type
