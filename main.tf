@@ -141,6 +141,7 @@ resource "qumulo_filesystem_azure" "cluster" {
   naming                                  = var.naming
   networking_mode                         = var.networking_mode
   node_count                              = var.node_count
+  node_replacement_when_changed           = var.node_replacement_when_changed
   nsg_allow_ingress_icmp                  = var.nsg_allow_ingress_icmp
   persistent_storage_resource_group       = var.persistent_storage_resource_group
   private_link_appconfig_dns_zone_id      = var.private_link_appconfig_dns_zone_id

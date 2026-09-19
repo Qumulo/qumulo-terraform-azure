@@ -41,8 +41,9 @@ terraform {
       version = ">= 2.0"
     }
     qumulo = {
-      source  = "qumulo-terraform-registry.s3.us-east-1.amazonaws.com/qumulo/qumulo"
-      version = ">= 1.4.15"
+      source = "qumulo-terraform-registry.s3.us-east-1.amazonaws.com/qumulo/qumulo"
+      # node_replacement_when_changed (main.tf/variables.tf) requires 1.4.16 or later.
+      version = ">= 1.4.16"
     }
   }
 }

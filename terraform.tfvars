@@ -76,6 +76,9 @@ tags = {
 # cluster_stall_window           - (OPTIONAL) How long a node addition, removal, or replacement may show no cluster activity (quorum, membership,
 #                                    restriper) before the provisioner gives up, e.g. "20m", "45m", "2h". Null = the provider default of 20m. Bounds silence,
 #                                    not work: an operation that keeps progressing runs as long as it needs. Provider 1.4.14 or later.
+# node_replacement_when_changed  - (OPTIONAL) Pure change-trigger, not a real setting -- its value is never inspected. Edit it to any new value
+#                                    (with no other change) to force a full cluster replace, node by node, same vm_type and node_count. Use this
+#                                    to pick up a disk-layout or tunable fix that only applies to newly-built nodes. Leave null to do nothing.
 # storage_class                  - (OPTIONAL) HOT cluster default is INTELLIGENT_TIERING, or override to STANDARD.
 # storage_replication_type       - (OPTIONAL) Azure storage replication type (immutable after creation). LRS or ZRS.
 # soft_capacity_limit_tb         - (OPTIONAL) Soft capacity limit in TB (50 to 10000). Default is 500TB. Can be increased to add storage, but cannot be decreased.  It's like a quota, unused capacity is not billed.
@@ -97,6 +100,7 @@ provider_update_timeout_minutes = null
 provider_delete_timeout_minutes = null
 provisioning_timeout_minutes    = null
 cluster_stall_window            = null
+node_replacement_when_changed   = null
 storage_class                   = null
 storage_replication_type        = null
 soft_capacity_limit_tb          = 100
