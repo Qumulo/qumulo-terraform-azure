@@ -42,11 +42,8 @@ terraform {
     }
     qumulo = {
       source = "qumulo-terraform-registry.s3.us-east-1.amazonaws.com/qumulo/qumulo"
-      # TODO(node_replacement_when_changed): this branch wires up node_replacement_when_changed
-      # (main.tf/variables.tf), which does not exist on qumulo_filesystem_azure in any released
-      # provider yet. Bump this floor to the version that ships it -- and confirm live against
-      # that version -- before merging. Do not merge with the floor still at 1.4.15.
-      version = ">= 1.4.15"
+      # node_replacement_when_changed (main.tf/variables.tf) requires 1.4.16 or later.
+      version = ">= 1.4.16"
     }
   }
 }
