@@ -163,6 +163,59 @@ the `private_endpoints` output; publish the new entries to your DNS, then lock t
 down from your own tooling -- the new account stays reachable through the subnet's service
 endpoint until you do.
 
+## NeuralSearch (optional)
+
+Qumulo NeuralSearch is a single-VM search appliance that indexes the files on this cluster. The wrapper deploys it with the `qumulo_neuralsearch_azure` provider resource (`neuralsearch.tf`), which needs qumulo provider 1.4.19 or later. It is off by default.
+
+### Enabling
+
+Set these variables in `terraform.tfvars`. See `examples/azure-neuralsearch.tf` for a complete example.
+
+```hcl
+neuralsearch_provision   = true
+neuralsearch_allow_cidrs = null # null keeps the VirtualNetwork service tag
+neuralsearch_vm_type     = null # null keeps the provider default, Standard_D16as_v5
+```
+
+`neuralsearch_allow_cidrs` sets which CIDR blocks may reach the UI on TCP 443. The default `VirtualNetwork` service tag covers the cluster VNet, peered VNets, and on-premises ranges connected through VPN or ExpressRoute. Setting CIDRs replaces the tag. The appliance has no public IP.
+
+### Networking requirements
+
+- **Outbound HTTPS at first boot.** The appliance downloads and installs everything on first boot. The subnet must allow outbound HTTPS (typically through a NAT gateway) to `qumulo-neuralsearch.s3.us-west-2.amazonaws.com`, `get.docker.com`, `download.docker.com`, `public.ecr.aws`, and the Ubuntu package mirrors. Without it the appliance never finishes bootstrapping and the apply waits until the provider timeout.
+- **Azure agent connectivity.** The provider checks first boot by running a command on the VM through Azure Run Command, so the VM needs its normal Azure agent connectivity.
+- **Appliance to cluster.** The appliance reaches the cluster on TCP 8000 (the Qumulo REST API) and over NFS. The default cluster `allow_cidrs` (the subnet's address prefixes) already covers this because the appliance sits in the same subnet. If you set `allow_cidrs` explicitly, make sure it includes the subnet.
+
+### Resource group
+
+The appliance is created in its own resource group, `<resource_group_name>-search`, and not in the cluster resource group. The cluster resource group must stay dedicated to the cluster (see the floating-IP reconciler note in `main.tf`), so the wrapper never sets `resource_group_name` on the appliance. Deletion protection follows `deletion_protection`. When it is `true`, the appliance VM carries a CanNotDelete lock and `terraform destroy` is refused until you set it to `false` and apply.
+
+### Cost
+
+The appliance has a 1 TiB Premium SSD OS disk. The provider raises it to the P50 performance tier, and Azure bills it at the P50 rate. The default VM size, Standard_D16as_v5, has 16 vCPU and 64 GiB of memory.
+
+### Accessing the appliance
+
+Password login is disabled. There are two ways in.
+
+- **Azure Run Command.** The VM name is the last segment of the `neuralsearch_vm_id` output.
+
+  ```bash
+  az vm run-command invoke --resource-group <cluster_rg>-search --name <vm-name> \
+    --command-id RunShellScript --scripts "systemctl status neuralsearch"
+  ```
+
+- **SSH.** Set `ssh_public_key_path` and connect as `qsadmin` from inside the VNet. Without `ssh_public_key_path` there is no SSH access.
+
+### First-boot setup
+
+1. Open the `neuralsearch_ui_url` output in a browser. The UI presents a self-signed certificate at first, so expect a certificate warning.
+2. In the setup wizard, enter the cluster REST endpoint (`https://<cluster-ip>:8000`), an API key, and the NFS export host. Terraform does not pass cluster credentials to the appliance. The search index is stored on the cluster in the `/.neuralsearch` NFS export.
+3. Sign in with a cluster account (password or SSO) that holds the Administrators or Observers role.
+
+### Limitations
+
+`qumulo_neuralsearch_azure` does not support `terraform import`. Changing `neuralsearch_vm_type` or `ssh_public_key_path` replaces the appliance.
+
 ## Terraform Documentation
 
 > ℹ️ **Note:** Requirements, Inputs, and Outputs below are hand-maintained (this repository does not yet run `terraform-docs` in CI). Keep them in sync with `variables.tf` / `outputs.tf` when either changes.
@@ -176,7 +229,7 @@ endpoint until you do.
 | <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) | >= 3.0 |
 | <a name="requirement_null"></a> [null](#requirement\_null) | >= 3.1 |
 | <a name="requirement_random"></a> [random](#requirement\_random) | >= 3.1 |
-| <a name="requirement_qumulo"></a> [qumulo](#requirement\_qumulo) | >= 1.4.15 |
+| <a name="requirement_qumulo"></a> [qumulo](#requirement\_qumulo) | >= 1.4.19 |
 
 ## Inputs
 
@@ -206,6 +259,7 @@ endpoint until you do.
 | <a name="input_disable_keyvault_public_network_access"></a> [disable\_keyvault\_public\_network\_access](#input\_disable\_keyvault\_public\_network\_access) | LEGACY: Disable public network access to the Key Vault the provider creates. Requires `private_link_keyvault_dns_zone_id`. Superseded by the `create_*_private_endpoint` variables + `disable_public_network_access_post_deploy`. | `bool` | `null` | no |
 | <a name="input_disable_public_network_access_post_deploy"></a> [disable\_public\_network\_access\_post\_deploy](#input\_disable\_public\_network\_access\_post\_deploy) | OPTIONAL: Disable public access, as the last step of the apply, on each service whose `create_*_private_endpoint` flag is set. Azure DNS path only (each enabled service needs its zone ID); external-DNS callers lock down from their own tooling via the `private_endpoints` output. | `bool` | `false` | no |
 | <a name="input_floating_ip_count"></a> [floating\_ip\_count](#input\_floating\_ip\_count) | OPTIONAL: Number of floating IPs to assign to the cluster. Must be 0 (disabled) or between 3 and 100. Requires networking\_mode "host\_managed". Once a count has been applied, omitting this attribute keeps the previous value -- set it to 0 explicitly to remove floating IPs. | `number` | `3` | no |
+| <a name="input_hooks_apply_watch"></a> [hooks\_apply\_watch](#input\_hooks\_apply\_watch) | OPTIONAL: While a hook is wired, tail the VMs' boot-diagnostics serial logs during `terraform apply` and print the hooks' "[<hook\_name>] ..." lines into the apply output (needs the az CLI; see hooks-watch.tf). Set false to opt out. | `bool` | `true` | no |
 | <a name="input_key_vault_id"></a> [key\_vault\_id](#input\_key\_vault\_id) | OPTIONAL: Full Azure resource ID of a customer-managed Key Vault. If omitted, the provider creates one. | `string` | `null` | no |
 | <a name="input_keyvault_private_dns_zone_id"></a> [keyvault\_private\_dns\_zone\_id](#input\_keyvault\_private\_dns\_zone\_id) | OPTIONAL: Full resource ID of the `privatelink.vaultcore.azure.net` (public) / `privatelink.vaultcore.usgovcloudapi.net` (US Gov) private DNS zone; the wrapper creates the Key Vault endpoint's A record. Requires `create_keyvault_private_endpoint`; same subscription as the blob zone. Leave null on the external-DNS path. | `string` | `null` | no |
 | <a name="input_location"></a> [location](#input\_location) | Azure region for deployment | `string` | n/a | yes |
@@ -213,6 +267,9 @@ endpoint until you do.
 | <a name="input_marketplace_image"></a> [marketplace\_image](#input\_marketplace\_image) | OPTIONAL: Azure Marketplace image specification for cluster nodes. | `list(object({ publisher = string, offer = string, sku = string, version = string }))` | `null` | no |
 | <a name="input_naming"></a> [naming](#input\_naming) | OPTIONAL: Custom naming templates for Azure resources. | `list(object({ storage_account = optional(string), vm_name = optional(string) }))` | `null` | no |
 | <a name="input_networking_mode"></a> [networking\_mode](#input\_networking\_mode) | OPTIONAL: Network management mode for cluster nodes ("host\_managed" default or "qumulo\_managed"). | `string` | `null` | no |
+| <a name="input_neuralsearch_allow_cidrs"></a> [neuralsearch\_allow\_cidrs](#input\_neuralsearch\_allow\_cidrs) | OPTIONAL: CIDR blocks allowed to reach the NeuralSearch UI on TCP 443. Null keeps the VirtualNetwork service tag, which covers the VNet, peered VNets, and VPN or ExpressRoute on-premises ranges. Setting it replaces the tag. | `list(string)` | `null` | no |
+| <a name="input_neuralsearch_provision"></a> [neuralsearch\_provision](#input\_neuralsearch\_provision) | OPTIONAL: Deploy a Qumulo NeuralSearch appliance VM for this cluster, in the cluster's VNet and subnet and in a separate <resource\_group\_name>-search resource group. Requires qumulo provider 1.4.19 or later. | `bool` | `false` | no |
+| <a name="input_neuralsearch_vm_type"></a> [neuralsearch\_vm\_type](#input\_neuralsearch\_vm\_type) | OPTIONAL: Azure VM size for the NeuralSearch appliance. Null keeps the provider default, Standard_D16as_v5. | `string` | `null` | no |
 | <a name="input_nexus_account_id"></a> [nexus\_account\_id](#input\_nexus\_account\_id) | OPTIONAL: Qumulo Nexus organization ID to onboard newly-created clusters to. Only relevant when nexus\_api\_token\_or\_keyvault\_secret\_id is set; omit to let the provider auto-resolve the organization from the token's binding. | `number` | `null` | no |
 | <a name="input_nexus_api_token_or_keyvault_secret_id"></a> [nexus\_api\_token\_or\_keyvault\_secret\_id](#input\_nexus\_api\_token\_or\_keyvault\_secret\_id) | OPTIONAL: Qumulo Nexus API token, provided as plaintext, an Azure Key Vault secret resource ID, or a Key Vault secret URI -- resolved the same way as `admin_pwd_or_keyvault_secret_id`. When set, the provider auto-mints a per-cluster Nexus registration key and onboards new clusters to Nexus Fleet automatically. Leave null to skip Nexus onboarding entirely. | `string` | `null` | no |
 | <a name="input_node_count"></a> [node\_count](#input\_node\_count) | Number of nodes in the cluster. Valid values: 1 (single node), or 3-24. 2 is not supported, and 4 requires a single availability zone. | `number` | n/a | yes |
@@ -249,6 +306,9 @@ endpoint until you do.
 | <a name="output_deployment_unique_name"></a> [deployment\_unique\_name](#output\_deployment\_unique\_name) | Unique deployment identifier |
 | <a name="output_endpoint_ips"></a> [endpoint\_ips](#output\_endpoint\_ips) | Client-facing IPs. Floating IPs if configured, otherwise primary node IPs. |
 | <a name="output_endpoints"></a> [endpoints](#output\_endpoints) | Connection endpoints for various protocols |
+| <a name="output_neuralsearch_private_ip"></a> [neuralsearch\_private\_ip](#output\_neuralsearch\_private\_ip) | Private IP address of the NeuralSearch appliance. Null when neuralsearch_provision is false. |
+| <a name="output_neuralsearch_ui_url"></a> [neuralsearch\_ui\_url](#output\_neuralsearch\_ui\_url) | HTTPS URL of the NeuralSearch web UI (private IP, self-signed certificate). Null when neuralsearch_provision is false. |
+| <a name="output_neuralsearch_vm_id"></a> [neuralsearch\_vm\_id](#output\_neuralsearch\_vm\_id) | Azure resource ID of the NeuralSearch appliance VM. Null when neuralsearch_provision is false. |
 | <a name="output_private_dns_records"></a> [private\_dns\_records](#output\_private\_dns\_records) | fqdn -> private IP of the Azure Private DNS A records the wrapper created. Empty on the external-DNS path. |
 | <a name="output_private_endpoints"></a> [private\_endpoints](#output\_private\_endpoints) | Descriptors of every private endpoint serving this deployment (storage accounts, Key Vault, App Configuration). The feed for external DNS systems such as Infoblox. |
 | <a name="output_primary_ips"></a> [primary\_ips](#output\_primary\_ips) | Per-node primary IPs. Use these directly when no floating IPs are configured, or for per-node access. |

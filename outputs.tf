@@ -76,6 +76,21 @@ output "endpoints" {
   }
 }
 
+output "neuralsearch_ui_url" {
+  description = "HTTPS URL of the NeuralSearch web UI (private IP, self-signed certificate). Null when neuralsearch_provision is false."
+  value       = one(qumulo_neuralsearch_azure.search[*].ui_url)
+}
+
+output "neuralsearch_private_ip" {
+  description = "Private IP address of the NeuralSearch appliance. Null when neuralsearch_provision is false."
+  value       = one(qumulo_neuralsearch_azure.search[*].private_ip)
+}
+
+output "neuralsearch_vm_id" {
+  description = "Azure resource ID of the NeuralSearch appliance VM. Null when neuralsearch_provision is false."
+  value       = one(qumulo_neuralsearch_azure.search[*].vm_id)
+}
+
 output "private_endpoints" {
   description = "Every private endpoint serving this deployment (storage accounts, Key Vault, App Configuration). The feed for external DNS systems such as Infoblox: publish an A record fqdn -> ip_address for each entry, and use target_resource_id to disable public network access once the records serve."
   value = concat(

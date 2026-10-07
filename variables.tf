@@ -425,6 +425,27 @@ variable "networking_mode" {
   }
 }
 
+variable "neuralsearch_allow_cidrs" {
+  description = "OPTIONAL: CIDR blocks allowed to reach the NeuralSearch UI on TCP 443. Null keeps the VirtualNetwork service tag, which covers the VNet, peered VNets, and VPN or ExpressRoute on-premises ranges. Setting it replaces the tag."
+  type        = list(string)
+  default     = null
+  nullable    = true
+}
+
+variable "neuralsearch_provision" {
+  description = "OPTIONAL: Deploy a Qumulo NeuralSearch appliance VM for this cluster, in the cluster's VNet and subnet and in a separate <resource_group_name>-search resource group. Requires qumulo provider 1.4.19 or later."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
+variable "neuralsearch_vm_type" {
+  description = "OPTIONAL: Azure VM size for the NeuralSearch appliance. Null keeps the provider default, Standard_D16as_v5."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 variable "nexus_account_id" {
   description = "OPTIONAL: Qumulo Nexus organization ID to onboard newly-created clusters to. Only relevant when nexus_api_token_or_keyvault_secret_id is set; omit to let the provider auto-resolve the organization from the token's binding."
   type        = number
