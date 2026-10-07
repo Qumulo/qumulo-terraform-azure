@@ -184,3 +184,24 @@ blob_private_dns_zone_id                  = null
 keyvault_private_dns_zone_id              = null
 appconfig_private_dns_zone_id             = null
 disable_public_network_access_post_deploy = false
+
+# ***** OPTIONAL NEURALSEARCH *****
+# Deploys a single-VM Qumulo NeuralSearch appliance in the cluster's VNet and subnet. It gets its own
+# resource group, <resource_group_name>-search, so the cluster resource group stays dedicated.
+# Networking requirements:
+#  - The subnet needs outbound HTTPS (typically through a NAT gateway) to
+#    qumulo-neuralsearch.s3.us-west-2.amazonaws.com, get.docker.com, download.docker.com,
+#    public.ecr.aws, and the Ubuntu package mirrors. Without it the appliance never finishes
+#    bootstrapping and the apply waits until the provider timeout.
+#  - The VM needs normal Azure agent connectivity. The provider checks first boot by running a
+#    command on the VM through Azure Run Command.
+#  - The appliance reaches the cluster on TCP 8000 and NFS. The default cluster allow_cidrs (the
+#    subnet's address prefixes) already covers it because the appliance sits in the same subnet.
+# Deletion protection follows deletion_protection (a CanNotDelete lock on the appliance VM).
+# See README "NeuralSearch (optional)".
+# neuralsearch_provision   - (OPTIONAL, default false) Deploy the NeuralSearch appliance.
+# neuralsearch_allow_cidrs - (OPTIONAL) CIDR blocks allowed to reach the UI on TCP 443. Null keeps the VirtualNetwork service tag (VNet, peered VNets, VPN and ExpressRoute ranges). Setting it replaces the tag.
+# neuralsearch_vm_type     - (OPTIONAL) Azure VM size for the appliance. Null keeps the provider default, Standard_D16as_v5.
+neuralsearch_provision   = false
+neuralsearch_allow_cidrs = null
+neuralsearch_vm_type     = null

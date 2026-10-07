@@ -43,7 +43,8 @@ terraform {
     qumulo = {
       source = "qumulo-terraform-registry.s3.us-east-1.amazonaws.com/qumulo/qumulo"
       # node_replacement_when_changed (main.tf/variables.tf) requires 1.4.16 or later.
-      version = ">= 1.4.16"
+      # qumulo_neuralsearch_azure (neuralsearch.tf) requires 1.4.19 or later.
+      version = ">= 1.4.19"
     }
   }
 }
