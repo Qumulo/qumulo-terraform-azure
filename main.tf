@@ -143,6 +143,7 @@ resource "qumulo_filesystem_azure" "cluster" {
   node_count                              = var.node_count
   node_replacement_when_changed           = var.node_replacement_when_changed
   nsg_allow_ingress_icmp                  = var.nsg_allow_ingress_icmp
+  package_url                             = var.package_url
   persistent_storage_resource_group       = var.persistent_storage_resource_group
   private_link_appconfig_dns_zone_id      = var.private_link_appconfig_dns_zone_id
   private_link_keyvault_dns_zone_id       = var.private_link_keyvault_dns_zone_id

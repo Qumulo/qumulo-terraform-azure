@@ -501,6 +501,14 @@ variable "nsg_allow_ingress_icmp" {
   default     = false
 }
 
+variable "package_url" {
+  description = "OPTIONAL: URL of the qumulo-core package the nodes install, in place of the release the package registry serves for cluster_version. Requires cluster_version. Setting it also skips the plan-time check that cluster_version exists in the registry and the provisioner's availability probe. A presigned URL carries a credential, so the value is sensitive here and reaches the provider's write-only package_url, which never stores it in state. Requires provider 1.4.20 or later."
+  type        = string
+  default     = null
+  nullable    = true
+  sensitive   = true
+}
+
 variable "persistent_storage_resource_group" {
   description = "OPTIONAL: Resource group containing persistent storage accounts and Key Vault, if different from resource_group_name."
   type        = string

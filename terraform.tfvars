@@ -66,6 +66,7 @@ tags = {
 # deletion_protection            - Protects the cluster's VMs and storage accounts from deletion with CanNotDelete management locks. Default = true. Set to false to destroy.
 # cluster_uuid                   - (OPTIONAL) UUID of an existing cluster to import/adopt. Leave null for new deployments.
 # cluster_version                - (OPTIONAL) Qumulo software version. Defaults to latest. Immutable after creation. Upgrade version via cluster UI/API.
+# package_url                    - (OPTIONAL) URL of the qumulo-core package the nodes install instead of the registry release for cluster_version. Requires cluster_version. Sensitive (a presigned URL carries a credential); the provider never stores it in state. Requires provider 1.4.20 or later.
 # floating_ip_count              - (OPTIONAL) Number of floating IPs to assign to the cluster. Must be 0, or between 3 and 100. Requires networking_mode "host_managed". Default=3.
 # provider_timeout_minutes       - (OPTIONAL) The default timeout, in minutes, applied to any of create/update/delete not overridden individually below. Default is 30 minutes.
 # provider_create_timeout_minutes - (OPTIONAL) Timeout override for cluster creation, in minutes. Defaults to provider_timeout_minutes if unset. Consider raising this for larger node_count deployments.
@@ -93,6 +94,7 @@ deletion_protection             = true
 #------------OPTIONAL------------------
 cluster_uuid                    = null
 cluster_version                 = null
+package_url                     = null
 floating_ip_count               = 3
 provider_timeout_minutes        = 30
 provider_create_timeout_minutes = null
