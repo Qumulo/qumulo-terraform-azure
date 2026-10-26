@@ -120,6 +120,7 @@ resource "qumulo_filesystem_azure" "cluster" {
   admin_password                          = module.secrets.resolved_password
   allow_cidrs                             = local.allow_cidrs
   availability_zones                      = var.availability_zones
+  capacity_reservation_group_id           = var.capacity_reservation_group_id
   cluster_fqdn                            = var.cluster_fqdn
   cluster_name                            = var.cluster_name
   cluster_node_identity_id                = var.cluster_node_identity_id

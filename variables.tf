@@ -140,6 +140,18 @@ variable "blob_private_dns_zone_id" {
   }
 }
 
+variable "capacity_reservation_group_id" {
+  description = "OPTIONAL: Full resource ID of an Azure capacity reservation group (/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Compute/capacityReservationGroups/<name>; case-insensitive). Every node VM the provider creates after this is set -- cluster create, scale-out, and node replacement -- is associated with the group, and Azure matches each to the group's reservation for its VM size and availability zone. Existing nodes are never re-associated, so adding, changing, or removing this is an in-place change that only affects node VMs created later. The group needs a reservation for the cluster's vm_type in each availability zone the cluster uses, and changing vm_type needs a reservation for the new size first. The provisioner VM never uses the group. The deploying identity needs Microsoft.Compute/capacityReservationGroups/deploy/action on the group. Requires a provider version that ships capacity_reservation_group_id on qumulo_filesystem_azure; check versions.tf."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.capacity_reservation_group_id == null || can(regex("(?i)^/subscriptions/[0-9a-f-]+/resourceGroups/[^/]+/providers/Microsoft\\.Compute/capacityReservationGroups/[^/]+$", var.capacity_reservation_group_id))
+    error_message = "capacity_reservation_group_id must be a full capacity reservation group resource ID: /subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Compute/capacityReservationGroups/<name>."
+  }
+}
+
 variable "cluster_fqdn" {
   description = "OPTIONAL: Fully qualified domain name for Qumulo Core authoritative DNS. When set, the cluster answers DNS queries with floating IPs."
   type        = string
