@@ -79,6 +79,7 @@ tags = {
 # capacity_reservation_group_id  - (OPTIONAL) Full resource ID of an Azure capacity reservation group. Node VMs created from now on (create, scale-out, replacement)
 #                                    are associated with it; existing nodes are not. The group needs a reservation for vm_type in each zone used, and the
 #                                    deploying identity needs capacityReservationGroups/deploy/action on it. Leave null to not use a reservation group.
+#                                    Provider 1.4.26 or later.
 # node_replacement_when_changed  - (OPTIONAL) Pure change-trigger, not a real setting -- its value is never inspected. Edit it to any new value
 #                                    (with no other change) to force a full cluster replace, node by node, same vm_type and node_count. Use this
 #                                    to pick up a disk-layout or tunable fix that only applies to newly-built nodes. Leave null to do nothing.

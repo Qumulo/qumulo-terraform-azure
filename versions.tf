@@ -42,12 +42,8 @@ terraform {
     }
     qumulo = {
       source = "qumulo-terraform-registry.s3.us-east-1.amazonaws.com/qumulo/qumulo"
-      # node_replacement_when_changed (main.tf/variables.tf) requires 1.4.16 or later.
-      # TODO(capacity_reservation_group_id): this branch wires up capacity_reservation_group_id
-      # (main.tf/variables.tf), which does not exist on qumulo_filesystem_azure in any released
-      # provider yet. It ships in v1.4.26: bump this floor to ">= 1.4.26" once that release is
-      # published -- and confirm live against it -- before merging.
-      version = ">= 1.4.16"
+      # capacity_reservation_group_id (main.tf/variables.tf) requires 1.4.26 or later.
+      version = ">= 1.4.26"
     }
   }
 }
