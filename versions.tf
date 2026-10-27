@@ -41,8 +41,7 @@ terraform {
       version = ">= 2.0"
     }
     qumulo = {
-      source = "qumulo-terraform-registry.s3.us-east-1.amazonaws.com/qumulo/qumulo"
-      # capacity_reservation_group_id (main.tf/variables.tf) requires 1.4.26 or later.
+      source  = "qumulo-terraform-registry.s3.us-east-1.amazonaws.com/qumulo/qumulo"
       version = ">= 1.4.26"
     }
   }
