@@ -76,6 +76,10 @@ tags = {
 # cluster_stall_window           - (OPTIONAL) How long a node addition, removal, or replacement may show no cluster activity (quorum, membership,
 #                                    restriper) before the provisioner gives up, e.g. "20m", "45m", "2h". Null = the provider default of 20m. Bounds silence,
 #                                    not work: an operation that keeps progressing runs as long as it needs. Provider 1.4.14 or later.
+# capacity_reservation_group_id  - (OPTIONAL) Full resource ID of an Azure capacity reservation group. Node VMs created from now on (create, scale-out, replacement)
+#                                    are associated with it; existing nodes are not. The group needs a reservation for vm_type in each zone used, and the
+#                                    deploying identity needs capacityReservationGroups/deploy/action on it. Leave null to not use a reservation group.
+#                                    Provider 1.4.26 or later.
 # node_replacement_when_changed  - (OPTIONAL) Pure change-trigger, not a real setting -- its value is never inspected. Edit it to any new value
 #                                    (with no other change) to force a full cluster replace, node by node, same vm_type and node_count. Use this
 #                                    to pick up a disk-layout or tunable fix that only applies to newly-built nodes. Leave null to do nothing.
@@ -100,6 +104,7 @@ provider_update_timeout_minutes = null
 provider_delete_timeout_minutes = null
 provisioning_timeout_minutes    = null
 cluster_stall_window            = null
+capacity_reservation_group_id   = null
 node_replacement_when_changed   = null
 storage_class                   = null
 storage_replication_type        = null
